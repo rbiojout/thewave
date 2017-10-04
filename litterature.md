@@ -12,4 +12,7 @@ Deep learning with long short-term memory networks for financial market predicti
 
 An Investigation into the Use of Reinforcement Learning Techniques within the Algorithmic Trading Domain: http://www.doc.ic.ac.uk/teaching/distinguished-projects/2015/j.cumming.pdf
 
+
+Deep Learning in Finance: https://arxiv.org/pdf/1602.06561.pdf
+
 Deep Learning for Finance: Deep Portfolios: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2838013
