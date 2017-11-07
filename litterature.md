@@ -6,6 +6,13 @@ Efficient backprop: http://yann.lecun.com/exdb/publis/pdf/lecun-98b.pdf
 
 # Finance
 
+## Information theory
+E. T. Jaynes, Probability Theory: The Logic of Science
+http://www.med.mcgill.ca/epidemiology/hanley/bios601/GaussianModel/JaynesProbabilityTheory.pdf
+
+Gambling and Information theory
+https://en.wikipedia.org/wiki/Gambling_and_information_theory
+
 ## Reinforcement Learning
 
 Reinforcement Learning for Trading Systems and Portfolios (1998) https://pdfs.semanticscholar.org/10f3/4407d0f7766cfb887334de4ce105d5aa8aae.pdf
