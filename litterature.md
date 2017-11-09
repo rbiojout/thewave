@@ -34,3 +34,6 @@ An Investigation into the Use of Reinforcement Learning Techniques within the Al
 Deep Learning in Finance (2016) https://arxiv.org/pdf/1602.06561.pdf
 
 Deep Learning for Finance: Deep Portfolios (2016) https://papers.ssrn.com/sol3/papers.cfm?abstract_id=2838013
+
+Deep Learning for Multivariate Financial Time Series (with Deep Belief Networks)
+https://www.math.kth.se/matstat/seminarier/reports/M-exjobb15/150612a.pdf
