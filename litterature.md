@@ -27,6 +27,7 @@ An investigation into the use of reinforcement learning techniques within the al
 http://www.doc.ic.ac.uk/teaching/distinguished-projects/2015/j.cumming.pdf
 
 A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem (2017) https://arxiv.org/abs/1706.10059
+
 GITHUB https://github.com/wassname/rl-portfolio-management
 
 ## Deep Learning
