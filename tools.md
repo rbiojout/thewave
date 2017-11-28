@@ -1,5 +1,9 @@
 # Python
 
+
+List of books https://github.com/PlamenStilyianov/Python3
+
+
 see https://www.quantinsti.com/blog/python-trading-library/
 
 
