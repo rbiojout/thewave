@@ -16,3 +16,14 @@ QTPyLib http://qtpylib.io/docs/latest/#
 
 Quantiacs https://quantiacs.com/Home.aspx
 Quantopian https://www.quantopian.com/posts
+
+## notebooks
+https://github.com/fchollet/deep-learning-with-python-notebooks/
+
+https://github.com/leriomaggio/deep-learning-keras-tensorflow/
+
+https://github.com/sachinruk/deepschool.io
+
+https://github.com/stratospark/food-101-keras
+
+https://github.com/topics/keras
