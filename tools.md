@@ -27,3 +27,5 @@ https://github.com/sachinruk/deepschool.io
 https://github.com/stratospark/food-101-keras
 
 https://github.com/topics/keras
+
+https://github.com/BenjiKCF/Neural-Network-with-Financial-Time-Series-Data
