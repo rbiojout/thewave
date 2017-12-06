@@ -17,6 +17,9 @@ QTPyLib http://qtpylib.io/docs/latest/#
 Quantiacs https://quantiacs.com/Home.aspx
 Quantopian https://www.quantopian.com/posts
 
+## tutorials
+pandas  https://tomaugspurger.github.io/modern-1-intro
+
 ## notebooks
 https://github.com/fchollet/deep-learning-with-python-notebooks/
 
