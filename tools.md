@@ -6,6 +6,7 @@ List of books https://github.com/PlamenStilyianov/Python3
 
 see https://www.quantinsti.com/blog/python-trading-library/
 
+curation list https://github.com/wilsonfreitas/awesome-quant
 
 PyAlgoTrade http://gbeced.github.io/pyalgotrade/
 Zipline http://www.zipline.io
@@ -16,6 +17,11 @@ QTPyLib http://qtpylib.io/docs/latest/#
 
 Quantiacs https://quantiacs.com/Home.aspx
 Quantopian https://www.quantopian.com/posts
+
+## libraries
+Pyflux http://pyflux.readthedocs.io/en/latest/getting_started.html
+backtrader https://www.backtrader.com/docu/quickstart/quickstart.html#our-first-strategy
+
 
 ## tutorials
 pandas  https://tomaugspurger.github.io/modern-1-intro
