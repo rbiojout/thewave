@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import logging
 import sqlite3
-from datetime import date
+from datetime import date, datetime
 
 # from thewave.marketdata.tickerlist import TickerList
 import numpy as np
@@ -95,7 +95,7 @@ class HistoryManager:
         connection = sqlite3.connect(DATABASE_DIR)
 
         # select the min dates
-        sqlmin = 'select ticker, min(date) as date from History WHERE ticker IN {ticker} group by ticker'.format(ticker=tickers)
+        sqlmin = 'select ticker, min(date) as date from History WHERE ticker IN {ticker} group by ticker'.format(ticker=tuple(tickers))
         min_date_frame = pd.read_sql_query(sqlmin, connection, parse_dates=['date'])
         min_date = min_date_frame['date'].max()
 
@@ -110,7 +110,7 @@ class HistoryManager:
 
         #sql = "SELECT * from History WHERE date > \"{mindate}\" ORDER BY date, ticker".format(mindate=min_date)
         sql = ("SELECT {features}, date, ticker from History WHERE ticker IN {ticker} AND date > \"{mindate}\" "
-               "GROUP BY ticker, date".format(features=', '.join(features), ticker=tickers, mindate=min_date))
+               "GROUP BY ticker, date".format(features=', '.join(features), ticker=tuple(tickers), mindate=min_date))
         #print('sql :', sql)
 
         df = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date', 'ticker'])
@@ -172,10 +172,20 @@ class HistoryManager:
     def update_ticker(self, ticker):
         connection = sqlite3.connect(DATABASE_DIR)
         print('update ticker:', ticker)
+
+        min_date = None
+        max_date = None
         try:
             cursor = connection.cursor()
             min_date = cursor.execute('SELECT MIN(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
             max_date = cursor.execute('SELECT MAX(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
+        finally:
+            connection.commit()
+
+        try:
+            cursor = connection.cursor()
+            #min_date = cursor.execute('SELECT MIN(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
+            #max_date = cursor.execute('SELECT MAX(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
 
             print('min date:', min_date, type(min_date))
             print('max date:', max_date, type(max_date))
@@ -183,15 +193,18 @@ class HistoryManager:
                 self.fill_ticker(ticker, cursor)
             else:
                 #@TODO don't request is up-to-date by checking max_date
-                ticker_data = self._quandl_request.data(ticker, {'start_date': max_date})
-                for tick in ticker_data:
-                    cursor.execute('INSERT OR IGNORE INTO History (date, ticker, open, high, low, close, '
-                                   'volume, ex_dividend, '
-                                   'adj_open, adj_high, adj_low, adj_close, adj_volume) '
-                                   'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                                   (tick[0], ticker, tick[2], tick[3], tick[4], tick[5],
-                                    tick[6], tick[7],
-                                    tick[8], tick[9], tick[10], tick[11], tick[12]))
+                now_ts = pd.Timestamp(datetime.now())
+                max_ts = pd.Timestamp(max_date)
+                if (max_date == None) or (now_ts - max_ts).days >1:
+                    ticker_data = self._quandl_request.data(ticker, {'start_date': max_date})
+                    for tick in ticker_data:
+                        cursor.execute('INSERT OR IGNORE INTO History (date, ticker, open, high, low, close, '
+                                       'volume, ex_dividend, '
+                                       'adj_open, adj_high, adj_low, adj_close, adj_volume) '
+                                       'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                                       (tick[0], ticker, tick[2], tick[3], tick[4], tick[5],
+                                        tick[6], tick[7],
+                                        tick[8], tick[9], tick[10], tick[11], tick[12]))
 
             # if there is no data
         finally:

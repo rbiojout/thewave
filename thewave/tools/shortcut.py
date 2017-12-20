@@ -2,6 +2,7 @@ from __future__ import division,absolute_import,print_function
 from thewave.trade.backtest import BackTest
 from thewave.tdagent.algorithms import crp, ons, olmar, up, anticor1, pamr,\
     best, bk, cwmr_std, eg, sp, ubah, wmamr, bcrp, cornk, m0, rmr
+from thewave.tools.configprocess import parse_list_len
 
 # the dictionary of name of algorithms mapping to the constructor of tdagents
 ALGOS = {"crp": crp.CRP, "ons": ons.ONS, "olmar": olmar.OLMAR, "up": up.UP,
@@ -17,7 +18,7 @@ def execute_backtest(algo, config):
     @:return: numpy array of portfolio changes
     """
     #@TODO infer the number of tickers
-    ticker_number = config["input"]["ticker_number"]
+    ticker_number = parse_list_len(config["input"]["ticker_list"])
 
     agent, agent_type, net_dir = _construct_agent(algo, ticker_number)
     backtester = BackTest(config, agent=agent, agent_type=agent_type, net_dir=net_dir)

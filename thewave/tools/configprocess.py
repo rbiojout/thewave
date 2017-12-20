@@ -88,6 +88,29 @@ def byteify(input):
     else:
         return input
 
+def parse_list(input):
+    """
+    return a list based on a string in the json
+    of the type "['AAPL','MSFT','ABC','ETN']"
+    :param input:
+    :return:
+    """
+    input_quote = input.replace("'","\"")
+    list_encoded = json.loads(input_quote)
+    return list_encoded
+    #return [x.encode('utf-8') for x in list_encoded]
+
+
+def parse_list_len(input):
+    """
+    return a list based on a string in the json
+    of the type "['AAPL','MSFT','ABC','ETN']"
+    :param input:
+    :return:
+    """
+    input_quote = input.replace("'","\"")
+    list_encoded = json.loads(input_quote)
+    return len(list_encoded)
 
 def parse_time(time_string):
     print('time_string ',time_string," : ", datetime.strptime(time_string, "%Y/%m/%d"))

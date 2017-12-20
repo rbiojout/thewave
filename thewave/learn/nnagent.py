@@ -3,12 +3,14 @@ import tflearn
 import tensorflow as tf
 import numpy as np
 from thewave.constants import *
+from thewave.tools.configprocess import parse_list_len
 import thewave.learn.network as network
 
 class NNAgent:
     def __init__(self, config, restore_dir=None, device="cpu"):
         self.__config = config
-        self.__ticker_number = config["input"]["ticker_number"]
+        # self.__ticker_number = config["input"]["ticker_number"]
+        self.__ticker_number = parse_list_len(config["input"]["ticker_list"])
         self.__net = network.CNN(config["input"]["feature_number"],
                                  self.__ticker_number,
                                  config["input"]["window_size"],

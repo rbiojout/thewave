@@ -5,7 +5,8 @@ import thewave.marketdata.globaldatamatrix as gdm
 import numpy as np
 import pandas as pd
 import logging
-from thewave.tools.configprocess import parse_time
+import json
+from thewave.tools.configprocess import parse_time, parse_list
 from thewave.tools.data import get_ticker_list, get_type_list
 import thewave.marketdata.replaybuffer as rb
 
@@ -24,6 +25,7 @@ class DataMatrices:
                  feature_number=3,
                  test_portion=0.15,
                  asset_number=2,
+                 ticker_list=None,
                  portion_reversed=False, online=False, is_permed=False):
         """
         :param start: Unix time
@@ -44,9 +46,11 @@ class DataMatrices:
 
         # assert window_size >= MIN_NUM_PERIOD
 
-        tickers = get_ticker_list(asset_number)
+        #tickers = get_ticker_list(asset_number)
 
+        tickers = ticker_list
         self.tickers = tickers
+
 
         type_list = get_type_list(feature_number)
         self.__features = type_list
@@ -121,6 +125,12 @@ class DataMatrices:
         start = parse_time(input_config["start_date"])
         end = parse_time(input_config["end_date"])
 
+        # special treatment for lists
+        tickers_s = input_config["ticker_list"]
+        #ticker_list_encoded = json.loads(tickers_s)
+        #ticker_list = [x.encode('utf-8') for x in ticker_list_encoded]
+
+        ticker_list = parse_list(tickers_s)
         return DataMatrices(start=start,
                             end=end,
                             #market=input_config["market"],
@@ -135,7 +145,8 @@ class DataMatrices:
                             #volume_average_days=input_config["volume_average_days"],
                             test_portion=input_config["test_portion"],
                             portion_reversed=input_config["portion_reversed"],
-                            asset_number=input_config["asset_number"]
+                            asset_number=input_config["asset_number"],
+                            ticker_list=ticker_list,
                             )
 
     @property
