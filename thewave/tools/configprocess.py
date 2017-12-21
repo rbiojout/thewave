@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import sys
 import time
+from builtins import str as text
 from datetime import datetime
 import json
 import os
@@ -97,7 +98,10 @@ def parse_list(input):
     """
     input_quote = input.replace("'","\"")
     list_encoded = json.loads(input_quote)
-    return list_encoded
+    ## CAUTION, because of the difference in Python 2 and 3 of str and unicode, we need to change
+    ## from builtins import str as text
+    return [text(x) for x in list_encoded]
+    #return list_encoded
     #return [x.encode('utf-8') for x in list_encoded]
 
 
