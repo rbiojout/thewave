@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 from thewave.learn.nnagent import NNAgent
-from thewave.tools.configprocess import parse_list_len
+from thewave.tools.configprocess import parse_list
 from thewave.marketdata.datamatrices import DataMatrices
 import logging
 Result = collections.namedtuple("Result",
@@ -48,7 +48,7 @@ class TraderTrainer:
         np.random.seed(config["random_seed"])
 
         self.__window_size = self.input_config["window_size"]
-        self.__ticker_number = parse_list_len(self.input_config["ticker_list"])
+        self.__ticker_number = len(parse_list(self.input_config["ticker_list"]))
         self.__batch_size = self.train_config["batch_size"]
         self.__snap_shot = self.train_config["snap_shot"]
         config["input"]["fake_data"] = fake_data

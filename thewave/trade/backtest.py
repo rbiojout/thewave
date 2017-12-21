@@ -13,7 +13,7 @@ class BackTest(trader.Trader):
         if agent_type == "nn":
             data_matrices = self._rolling_trainer.data_matrices
         elif agent_type == "traditional":
-            config["input"]["feature_number"] = 1
+            config["input"]["feature_list"] = "['close']"
             data_matrices = DataMatrices.create_from_config(config)
         else:
             raise ValueError()

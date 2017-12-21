@@ -58,7 +58,7 @@ def get_test_data(config):
     :return : a 2d numpy array with shape(ticker_number, periods),
      each element the relative price
     """
-    config["input"]["feature_number"] = 1
+    config["input"]["feature_list"] = "['close']"
     config["input"]["norm_method"] = "relative"
     config["input"]["global_period"] = config["input"]["global_period"]
     price_matrix = DataMatrices.create_from_config(config)

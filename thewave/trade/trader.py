@@ -2,7 +2,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import pandas as pd
 from thewave.learn.rollingtrainer import RollingTrainer
-from thewave.tools.configprocess import parse_list_len
+from thewave.tools.configprocess import parse_list
 import logging
 import time
 
@@ -19,7 +19,7 @@ class Trader:
         self._agent_type = agent_type
 
         if agent_type == "traditional":
-            config["input"]["feature_number"] = 1
+            config["input"]["feature_list"] = "['close']"
             config["input"]["norm_method"] = "relative"
             self._norm_method = "relative"
         elif agent_type == "nn":
@@ -35,7 +35,7 @@ class Trader:
         # the total assets is calculated with BTC
         self._total_capital = initial_BTC
         self._window_size = config["input"]["window_size"]
-        self._ticker_number = parse_list_len(config["input"]["ticker_list"])
+        self._ticker_number = len(parse_list(config["input"]["ticker_list"]))
         self._commission_rate = config["trading"]["trading_consumption"]
         self._fake_ratio = config["input"]["fake_ratio"]
         self._asset_vector = np.zeros(self._ticker_number+1)

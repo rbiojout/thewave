@@ -22,7 +22,7 @@ class DataMatrices:
                  # market="poloniex",
                  # ticker_filter=1,
                  window_size=50,
-                 feature_number=3,
+                 feature_list=None,
                  test_portion=0.15,
                  asset_number=2,
                  ticker_list=None,
@@ -52,9 +52,9 @@ class DataMatrices:
         self.tickers = tickers
 
 
-        type_list = get_type_list(feature_number)
+        type_list = parse_list(feature_list)
         self.__features = type_list
-        self.feature_number = feature_number
+        self.feature_number = len(parse_list(feature_list))
         self.__history_manager = gdm.HistoryManager(tickers=tickers, online=online)
         # Panel with
         # Items are the features
@@ -127,14 +127,16 @@ class DataMatrices:
 
         # special treatment for lists
         tickers_s = input_config["ticker_list"]
-        #ticker_list_encoded = json.loads(tickers_s)
-        #ticker_list = [x.encode('utf-8') for x in ticker_list_encoded]
-
         ticker_list = parse_list(tickers_s)
+        asset_number = len(ticker_list)
+
+        features_s = input_config["feature_list"]
+        feature_list = parse_list(features_s)
+
         return DataMatrices(start=start,
                             end=end,
                             #market=input_config["market"],
-                            feature_number=input_config["feature_number"],
+                            feature_list=feature_list,
                             window_size=input_config["window_size"],
                             online=input_config["online"],
                             #period=input_config["global_period"],
@@ -145,7 +147,7 @@ class DataMatrices:
                             #volume_average_days=input_config["volume_average_days"],
                             test_portion=input_config["test_portion"],
                             portion_reversed=input_config["portion_reversed"],
-                            asset_number=input_config["asset_number"],
+                            asset_number=asset_number,
                             ticker_list=ticker_list,
                             )
 

@@ -3,15 +3,18 @@ import tflearn
 import tensorflow as tf
 import numpy as np
 from thewave.constants import *
-from thewave.tools.configprocess import parse_list_len
+from thewave.tools.configprocess import parse_list
 import thewave.learn.network as network
 
 class NNAgent:
     def __init__(self, config, restore_dir=None, device="cpu"):
         self.__config = config
         # self.__ticker_number = config["input"]["ticker_number"]
-        self.__ticker_number = parse_list_len(config["input"]["ticker_list"])
-        self.__net = network.CNN(config["input"]["feature_number"],
+        self.__ticker_number = len(parse_list(config["input"]["ticker_list"]))
+
+        self.__feature_number = len(parse_list(config["input"]["feature_list"]))
+
+        self.__net = network.CNN(self.__feature_number,
                                  self.__ticker_number,
                                  config["input"]["window_size"],
                                  config["layers"],
@@ -19,7 +22,7 @@ class NNAgent:
         self.__global_step = tf.Variable(0, trainable=False)
         self.__train_operation = None
         self.__y = tf.placeholder(tf.float32, shape=[None,
-                                                     self.__config["input"]["feature_number"],
+                                                     self.__feature_number,
                                                      self.__ticker_number])
         self.__future_price = tf.concat([tf.ones([self.__net.input_num, 1]),
                                        self.__y[:, 0, :]], 1)

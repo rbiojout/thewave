@@ -3,10 +3,10 @@
 from os import path
 
 DATABASE_DIR = path.realpath(__file__).\
-    replace('constants.pyc','/marketdata/Data.db').\
-    replace("constants.pyc","marketdata\\Data.db").\
-    replace('constants.py','/marketdata/Data.db').\
-    replace("constants.py","marketdata\\Data.db")
+    replace('thewave/constants.pyc','/marketdata/Data.db').\
+    replace("thewave\\constants.pyc","marketdata\\Data.db").\
+    replace('thewave/constants.py','/marketdata/Data.db').\
+    replace("thewave\\constants.py","marketdata\\Data.db")
 CONFIG_FILE_DIR = 'net_config.json'
 LAMBDA = 1e-4  # lambda in loss function 5 in training
    # About time
