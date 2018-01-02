@@ -48,3 +48,7 @@ https://www.math.kth.se/matstat/seminarier/reports/M-exjobb15/150612a.pdf
 
 ## Time series
 A deep learning framework for financial time series using stacked autoencoders and long- short term memory (2017) http://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0180944&type=printable
+
+## Portfolio
+Performance analysis of log-optimal portfolio strategies with transaction costs(2013)
+http://www.szit.bme.hu/~urbi/manu_ormos_urban_accepted.pdf
