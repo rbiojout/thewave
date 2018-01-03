@@ -38,8 +38,10 @@ class Trader:
         self._ticker_number = len(parse_list(config["input"]["ticker_list"]))
         self._commission_rate = config["trading"]["trading_consumption"]
         self._fake_ratio = config["input"]["fake_ratio"]
+        # initialize the portfolio to zero for all the tickers plus the cash
         self._asset_vector = np.zeros(self._ticker_number+1)
 
+        # initialize all the weights to zero and one for the cash
         self._last_omega = np.zeros((self._ticker_number+1,))
         self._last_omega[0] = 1.0
 
