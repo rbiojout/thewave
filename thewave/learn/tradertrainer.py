@@ -15,6 +15,8 @@ from thewave.learn.nnagent import NNAgent
 from thewave.tools.configprocess import parse_list
 from thewave.marketdata.datamatrices import DataMatrices
 import logging
+
+# formating for the lines in the summary csv
 Result = collections.namedtuple("Result",
                                 [
                                  "test_pv",
@@ -77,11 +79,18 @@ class TraderTrainer:
             feed = self.test_set
         elif set_name == "training":
             feed = self.training_set
+        elif set_name == "validation":
+            feed = self.training_set
         else:
             raise ValueError()
         result = self._agent.evaluate_tensors(feed["X"],feed["y"],last_w=feed["last_w"],
                                               setw=feed["setw"], tensors=tensors)
         return result
+
+    @property
+    def datamatrix(self):
+        return self._matrix
+
 
     @staticmethod
     def calculate_upperbound(y):
@@ -95,8 +104,9 @@ class TraderTrainer:
         fast_train = self.train_config["fast_train"]
         tflearn.is_training(False, self._agent.session)
 
-        summary, v_pv, v_log_mean, v_loss, log_mean_free, weights= \
+        summary, pv, v_pv, v_log_mean, v_loss, log_mean_free, weights= \
             self._evaluate("test", self.summary,
+                           self._agent.pv_vector,
                            self._agent.portfolio_value,
                            self._agent.log_mean,
                            self._agent.loss,
@@ -114,9 +124,14 @@ class TraderTrainer:
         logging.info('-'*30)
         if not fast_train:
             logging.info('training loss is %s\n' % loss_value)
+        weights_shape = weights.shape
+        logging.info('first weight %s is %s \n' % (weights_shape, weights[0]))
+
         logging.info('the portfolio value on test set is %s\nlog_mean is %s\n'
                      'loss_value is %3f\nlog mean without commission fee is %3f\n' % \
                      (v_pv, v_log_mean, v_loss, log_mean_free))
+        pv_shape = pv.shape
+        logging.info('the portfolio pv %s are %s \n' % (pv_shape, pv))
         logging.info('='*30+"\n")
 
         if not self.__snap_shot:
@@ -140,15 +155,22 @@ class TraderTrainer:
         batch_y = batch["y"]
         batch_last_w = batch["last_w"]
         batch_w = batch["setw"]
-        return batch_input, batch_y, batch_last_w, batch_w
+        batch_last_close = batch["lastclose"]
+        return batch_input, batch_y, batch_last_w, batch_w, batch_last_close
 
     def __init_tensor_board(self, log_file_dir):
+        """
+        list all details for the summary in tensorboard
+        :param log_file_dir:
+        :return:
+        """
         tf.summary.scalar('benefit', self._agent.portfolio_value)
         tf.summary.scalar('log_mean', self._agent.log_mean)
         tf.summary.scalar('loss', self._agent.loss)
         tf.summary.scalar("log_mean_free", self._agent.log_mean_free)
         tf.summary.scalar("sharpe", self._agent.sharp_ratio)
         tf.summary.histogram("portfolio_weights", self._agent.portfolio_weights)
+        tf.summary.histogram("pv_vector", self._agent.pv_vector)
 
         self.summary = tf.summary.merge_all()
         location = log_file_dir
@@ -180,7 +202,7 @@ class TraderTrainer:
         total_training_time = 0
         for i in range(self.train_config["steps"]):
             step_start = time.time()
-            x, y, last_w, setw = self.next_batch()
+            x, y, last_w, setw, batch_last_close = self.next_batch()
             finish_data = time.time()
             total_data_time += (finish_data - step_start)
             self._agent.train(x, y, last_w=last_w, setw=setw)
@@ -204,6 +226,12 @@ class TraderTrainer:
         return self.__log_result_csv(index, time.time() - starttime)
 
     def __log_result_csv(self, index, time):
+        """
+        log the test batch result in the summary.csv according to the index of the training package
+        :param index:
+        :param time:
+        :return:
+        """
         from thewave.trade import backtest
         dataframe = None
         csv_dir = './train_package/train_summary.csv'

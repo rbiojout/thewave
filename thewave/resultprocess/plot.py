@@ -7,21 +7,23 @@ import logging
 import json
 import numpy as np
 import datetime
+from thewave.marketdata.globaldatamatrix import HistoryManager
 from thewave.tools.indicator import max_drawdown, sharpe, positive_count, negative_count, moving_accumulate
 from thewave.tools.configprocess import parse_time, check_input_same
-from thewave.tools.shortcut import execute_backtest
+from thewave.tools.shortcut import execute_backtest, get_backtester
 
 # the dictionary of name of indicators mapping to the function of related indicators
 # input is portfolio changes
+#@TODO adjust regarding period, at this time period of 1 day
 INDICATORS = {"portfolio value": np.prod,
               "sharpe ratio": sharpe,
               "max drawdown": max_drawdown,
               "positive periods": positive_count,
               "negative periods": negative_count,
-              "postive day": lambda pcs: positive_count(moving_accumulate(pcs, 48)),
-              "negative day": lambda pcs: negative_count(moving_accumulate(pcs, 48)),
-              "postive week": lambda pcs: positive_count(moving_accumulate(pcs, 336)),
-              "negative week": lambda pcs: negative_count(moving_accumulate(pcs, 336)),
+              "postive day": lambda pcs: positive_count(moving_accumulate(pcs, 1)),
+              "negative day": lambda pcs: negative_count(moving_accumulate(pcs, 1)),
+              "postive week": lambda pcs: positive_count(moving_accumulate(pcs, 7)),
+              "negative week": lambda pcs: negative_count(moving_accumulate(pcs, 7)),
               "average": np.mean}
 
 NAMES = {"best": "Best Stock (Benchmark)",
@@ -100,8 +102,8 @@ def plot_backtest(config, algos, labels=None):
     plt.tight_layout()
     ax.legend(loc="upper left", prop={"size":10})
     fig.autofmt_xdate()
-    plt.savefig("result.eps", bbox_inches='tight',
-                pad_inches=0)
+    #plt.savefig("./train_package/"+algo+"result"+algo+".eps", bbox_inches='tight', pad_inches=0)
+    plt.savefig("result.eps", bbox_inches='tight', pad_inches=0)
     plt.show()
 
 
@@ -152,6 +154,51 @@ def table_backtest(config, algos, labels=None, format="raw",
         raise ValueError("The format " + format + " is not supported")
 
 
+def file_backtest(config, algo):
+    logging.info("start executing back test")
+    backtest = get_backtester(algo, config)
+    print("test omega :", backtest.test_omega_vector)
+    start, end = _extract_test(config)
+    tickers = backtest._ticker_name_list
+    history = HistoryManager(tickers=tickers,online=False)
+    datas = history.get_global_panel(start=start,end=end,tickers=tickers,features=['close'],online=False)
+
+    window_size = int(config["input"]["window_size"])
+
+    stock_history = datas.iloc[0,:,window_size+1:].T
+    stock_history['USD'] = np.ones(stock_history.shape[0])
+
+    # stock history
+    # need for the date time index to be present
+    lastclose = pd.DataFrame(backtest.test_set['lastclose'])
+    lastclose.columns = tickers
+    lastclose['USD'] = np.ones(lastclose.shape[0])
+
+    # prices per step
+    print("test pv :", backtest.test_pc_vector)
+    tickers.insert(0,'USD')
+    label_history = ['Omega '+ x for x in tickers]
+    test_history = pd.DataFrame(backtest.test_omega_vector, columns=label_history)
+    test_history = test_history.set_index(stock_history.index.values)
+    test_history['pv']=np.cumprod(backtest.test_pc_vector)
+    test_history['mu'] = backtest.test_mu_vector
+    for ticker in tickers:
+        test_history['Share ' + ticker] = test_history['pv'] * test_history['Omega ' + ticker] / stock_history[ticker]
+    for ticker in tickers:
+        buy_sell = np.diff(test_history['Share ' + ticker])
+        test_history['Buy/Sell ' + ticker] = np.insert(buy_sell, 0, test_history['Share '+ticker][0])
+    frames = [stock_history, test_history]
+    result = pd.concat(frames, axis=1)
+
+    result.to_csv("./train_package/"+algo+"/backtest-"+algo+".csv", mode='w')
+    writer = pd.ExcelWriter("./train_package/"+algo+"/backtest-"+algo+".xlsx")
+    result.to_excel(writer, 'Backtest')
+    writer.save()
+    logging.info("finish executing back test")
+
+    print("THIS IS THE END")
+
+
 def _extract_test(config):
     global_start = parse_time(config["input"]["start_date"])
     global_end = parse_time(config["input"]["end_date"])
@@ -167,8 +214,13 @@ def _load_from_summary(index, config):
     @:return: numpy array of the portfolio changes
     """
     dataframe = pd.DataFrame.from_csv("./train_package/train_summary.csv")
-    history_string = dataframe.loc[int(index)]["backtest_test_history"]
-    if not check_input_same(config, json.loads(dataframe.loc[int(index)]["config"])):
+    histoframe = dataframe.loc[int(index)]
+    # take the last one in case of multiple reruns
+    if isinstance(histoframe, pd.core.frame.DataFrame):
+        histoframe = histoframe.iloc[-1, :]
+
+    history_string = histoframe["backtest_test_history"]
+    if not check_input_same(config, json.loads(histoframe["config"])):
         raise ValueError("the date of this index is not the same as the default config")
     return np.fromstring(history_string, sep=",")[:-1]
 

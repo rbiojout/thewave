@@ -22,6 +22,12 @@ class BackTest(trader.Trader):
         self._total_steps = self.__test_length
         self.__test_pv = 1.0
         self.__test_pc_vector = []
+        self.__test_omega = []
+        self.__mu =[]
+
+    @property
+    def test_set(self):
+        return self.__test_set
 
     @property
     def test_pv(self):
@@ -30,6 +36,18 @@ class BackTest(trader.Trader):
     @property
     def test_pc_vector(self):
         return np.array(self.__test_pc_vector, dtype=np.float32)
+
+    @property
+    def test_omega_vector(self):
+        """
+
+        :return: all the corresponding weights from the tests
+        """
+        return np.array(self.__test_omega, dtype=np.float32)
+
+    @property
+    def test_mu_vector(self):
+        return np.array(self.__mu, dtype=np.float32)
 
     def finish_trading(self):
         self.__test_pv = self._total_capital
@@ -72,6 +90,7 @@ class BackTest(trader.Trader):
         logging.debug("the raw omega is {}".format(omega))
         future_price = np.concatenate((np.ones(1), self.__get_matrix_y()))
         pv_after_commission = calculate_pv_after_commission(omega, self._last_omega, self._commission_rate)
+        self.__mu.append(pv_after_commission)
         portfolio_change = pv_after_commission * np.dot(omega, future_price)
         self._total_capital *= portfolio_change
         self._last_omega = pv_after_commission * omega * \
@@ -79,4 +98,5 @@ class BackTest(trader.Trader):
                            portfolio_change
         logging.debug("the portfolio change this period is : {}".format(portfolio_change))
         self.__test_pc_vector.append(portfolio_change)
+        self.__test_omega.append(omega)
 

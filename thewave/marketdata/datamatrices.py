@@ -18,7 +18,7 @@ class DataMatrices:
                  # period,
                  batch_size=50,
                  # volume_average_days=30,
-                 buffur_bias_ratio=0,
+                 buffer_bias_ratio=0,
                  # market="poloniex",
                  # ticker_filter=1,
                  window_size=50,
@@ -97,7 +97,7 @@ class DataMatrices:
         end_index = self._train_ind[-1]
         self.__replay_buffer = rb.ReplayBuffer(start_index=self._train_ind[0],
                                                end_index=end_index,
-                                               sample_bias=buffur_bias_ratio,
+                                               sample_bias=buffer_bias_ratio,
                                                batch_size=self.__batch_size,
                                                ticker_number=self.__ticker_no,
                                                is_permed=self.__is_permed)
@@ -142,7 +142,7 @@ class DataMatrices:
                             #period=input_config["global_period"],
                             #ticker_filter=input_config["ticker_number"],
                             is_permed=input_config["is_permed"],
-                            buffur_bias_ratio=train_config["buffer_biased"],
+                            buffer_bias_ratio=train_config["buffer_biased"],
                             batch_size=train_config["batch_size"],
                             #volume_average_days=input_config["volume_average_days"],
                             test_portion=input_config["test_portion"],
@@ -207,7 +207,9 @@ class DataMatrices:
         M = np.array(M)
         X = M[:, :, :, :-1]
         y = M[:, :, :, -1] / M[:, 0, None, :, -2]
-        return {"X": X, "y": y, "last_w": last_w, "setw": setw}
+        # added lastclose
+        lastclose = [self.get_last_close(index) for index in indexs]
+        return {"X": X, "y": y, "last_w": last_w, "setw": setw, "lastclose": lastclose}
 
     # volume in y is the volume in next access period
     def get_no_norm_submatrix(self, ind):
@@ -230,6 +232,11 @@ class DataMatrices:
         return sequence/last
         # return self.__global_data.iloc(axis=0)[ind:ind+self._window_size+1,:]
 
+    def get_last_close(self, ind):
+        # we extract an array of the last values of 'close' for all tickers and transform to an array
+        last = np.array(self.__global_data.loc['close',:,:].iloc[:,ind+self._window_size])
+        last.shape = (len(self.tickers))
+        return last
 
     def __divide_data(self, test_portion, portion_reversed):
         train_portion = 1 - test_portion

@@ -31,8 +31,8 @@ def sharpe(pc_array):
     pc_array = pc_array-1.0
     return np.mean(pc_array)/np.std(pc_array)
 
-
-def moving_accumulate(pc_array, n=48):
+#@TODO 1 day for the moment
+def moving_accumulate(pc_array, n=1):
     acc = np.cumprod(pc_array)
     acc[n:] = acc[n:] / acc[:-n]
     return acc

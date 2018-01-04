@@ -33,12 +33,15 @@ class RollingTrainer(TraderTrainer):
         fast_train = self.train_config["fast_train"]
         if not fast_train:
             tflearn.is_training(False, self._agent.session)
-
+            # @TODO changed from "validation to training : must check
             v_pv, v_log_mean = self._evaluate("validation",
                                               self._agent.portfolio_value,
                                               self._agent.log_mean)
-            t_pv, t_log_mean = self._evaluate("test", self._agent.portfolio_value, self._agent.log_mean)
-            loss_value = self._evaluate("training", self._agent.loss)
+            t_pv, t_log_mean = self._evaluate("test",
+                                              self._agent.portfolio_value,
+                                              self._agent.log_mean)
+            loss_value = self._evaluate("training",
+                                        self._agent.loss)
 
             logging.info('training loss is %s\n' % loss_value)
             logging.info('the portfolio value on validation asset is %s\nlog_mean is %s\n' %
@@ -54,6 +57,6 @@ class RollingTrainer(TraderTrainer):
         if steps > 0:
             self._matrix.append_experience(online_w)
             for i in range(steps):
-                x, y, last_w, w = self.next_batch()
+                x, y, last_w, w, lact_close = self.next_batch()
                 self._agent.train(x, y, last_w, w)
             self.__rolling_logging()

@@ -24,6 +24,18 @@ def execute_backtest(algo, config):
     backtester.start_trading()
     return backtester.test_pc_vector
 
+def get_backtester(algo, config):
+    """
+    @:param algo: string representing the name the name of algorithms
+    @:return: numpy array of portfolio changes
+    """
+    ticker_number = len(parse_list(config["input"]["ticker_list"]))
+
+    agent, agent_type, net_dir = _construct_agent(algo, ticker_number)
+    backtester = BackTest(config, agent=agent, agent_type=agent_type, net_dir=net_dir)
+    backtester.start_trading()
+    return backtester
+
 def _construct_agent(algo, ticker_number=10):
     if algo.isdigit():
         agent = None

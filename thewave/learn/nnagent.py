@@ -30,8 +30,10 @@ class NNAgent:
                               tf.reduce_sum(self.__future_price * self.__net.output, axis=1)[:, None]
         # tf.assert_equal(tf.reduce_sum(self.__future_omega, axis=1), tf.constant(1.0))
         self.__commission_ratio = self.__config["trading"]["trading_consumption"]
-        self.__pv_vector = tf.reduce_sum(self.__net.output * self.__future_price, reduction_indices=[1]) *\
+        # @TODO the first value is not taking care of commission: change the 1 to 1-commission
+        self.__pv_vector = tf.reduce_sum(self.__net.output * self.__future_price, reduction_indices=[1]) * \
                            (tf.concat([tf.ones(1), self.__pure_pc()], axis=0))
+
         self.__log_mean_free = tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output * self.__future_price,
                                                                    reduction_indices=[1])))
         self.__portfolio_value = tf.reduce_prod(self.__pv_vector)
@@ -85,6 +87,11 @@ class NNAgent:
     @property
     def loss(self):
         return self.__loss
+
+    def my_tf_round(self,x,decimals=0):
+        multiplier = tf.constant(10 ** decimals, dtype=x.dtype)
+        return tf.round(x * multiplier) / multiplier
+
 
     def recycle(self):
         tf.reset_default_graph()
@@ -183,7 +190,9 @@ class NNAgent:
         w_t = self.__future_omega[:self.__net.input_num-1]  # rebalanced
         w_t1 = self.__net.output[1:self.__net.input_num]
         mu = 1 - tf.reduce_sum(tf.abs(w_t1[:, 1:]-w_t[:, 1:]), axis=1)*c
+
         """
+
         mu = 1-3*c+c**2
 
         def recurse(mu0):

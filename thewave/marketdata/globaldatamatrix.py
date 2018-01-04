@@ -94,8 +94,11 @@ class HistoryManager:
 
         connection = sqlite3.connect(DATABASE_DIR)
 
+        # construct string for sql query regarding tickers
+        # need to remove last coma when only one entry
+        tickers_s = tuple(tickers) if len(tickers)>1 else "('"+tickers[0]+"')"
         # select the min dates
-        sqlmin = 'select ticker, min(date) as date from History WHERE ticker IN {ticker} group by ticker'.format(ticker=tuple(tickers))
+        sqlmin = 'select ticker, min(date) as date from History WHERE ticker IN {ticker} group by ticker'.format(ticker=tickers_s)
         min_date_frame = pd.read_sql_query(sqlmin, connection, parse_dates=['date'])
         min_date = min_date_frame['date'].max()
 
@@ -104,13 +107,10 @@ class HistoryManager:
         #print(' min_date ', min_date)
 
 
-        #time_index = pd.to_datetime(list(range(int(start), int(end)+1, 3600*24)),unit='s')
-        time_index = pd.date_range(start=min_date, end=end,freq='D')
-        panel = pd.Panel(items=features, major_axis=tickers, minor_axis=time_index, dtype=np.float32)
 
         #sql = "SELECT * from History WHERE date > \"{mindate}\" ORDER BY date, ticker".format(mindate=min_date)
         sql = ("SELECT {features}, date, ticker from History WHERE ticker IN {ticker} AND date > \"{mindate}\" "
-               "GROUP BY ticker, date".format(features=', '.join(features), ticker=tuple(tickers), mindate=min_date))
+               "GROUP BY ticker, date".format(features=', '.join(features), ticker=tickers_s, mindate=min_date))
         #print('sql :', sql)
 
         df = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date', 'ticker'])
@@ -119,7 +119,12 @@ class HistoryManager:
 
         #print("DATABASE collected :", df)
 
-
+        # time_index = pd.to_datetime(list(range(int(start), int(end)+1, 3600*24)),unit='s')
+        # @TODO frequency change
+        time_index = pd.date_range(start=min_date, end=end, freq='D')
+        #time_index = df.index.levels[0]
+        #print("IMPORTANT Number of index ", len(time_index))
+        panel = pd.Panel(items=features, major_axis=tickers, minor_axis=time_index, dtype=np.float32)
 
         try:
             for ticker in tickers:
