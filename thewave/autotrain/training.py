@@ -24,8 +24,8 @@ def train_one(save_path, config, log_file_dir, index, logfile_level, console_lev
     :return : the Result namedtuple
     """
     if log_file_dir:
-        logging.basicConfig(filename=log_file_dir.replace("tensorboard","programlog.log"),
-                            level=logfile_level)
+        logging.basicConfig(filename=log_file_dir.replace("tensorboard","programlog.log"),level=logfile_level)
+
         console = logging.StreamHandler()
         console.setLevel(console_level)
         logging.getLogger().addHandler(console)
@@ -57,33 +57,33 @@ def train_all(processes=1, device="cpu"):
     for dir in all_subdir:
         # train only if the log dir does not exist
         if not str.isdigit(dir):
-            print("directory doesn't exist", dir)
+            # print("directory doesn't exist", dir)
             #return
             continue
         # NOTE: logfile is for compatibility reason
-        print(dir,": tensorboard:",os.path.isdir("./"+train_dir+"/"+dir+"/tensorboard"))
-        print(dir,"./"+train_dir+"/"+dir+"/logfile",": logfile:",os.path.isdir("./"+train_dir+"/"+dir+"/logfile"))
-        print(dir,": ", not (os.path.isdir("./"+train_dir+"/"+dir+"/tensorboard") or os.path.isdir("./"+train_dir+"/"+dir+"/logfile")))
-        if not (os.path.isdir("./"+train_dir+"/"+dir+"/tensorboard") or os.path.isdir("./"+train_dir+"/"+dir+"/logfile")):
-            p = Process(target=train_one, args=(
-                "./" + train_dir + "/" + dir + "/netfile",
-                load_config(dir),
-                "./" + train_dir + "/" + dir + "/tensorboard",
-                dir, logfile_level, console_level, device))
-            p.start()
-            print("process started",p)
+        print( dir," :", (os.path.isdir("./" + train_dir + "/"+dir + "/tensorboard")))
+        # if not (os.path.isdir("./" + train_dir + "/" + dir + "/tensorboard") or os.path.isdir("./" + train_dir + "/" + dir + "/logfile")):
+        if not (os.path.isdir("./" + train_dir + "/"+dir + "/tensorboard")):
+            # save_path, config, log_file_dir, index, logfile_level, console_level, device
+            p = Process(target=train_one, args=("./" + train_dir + "/" + dir + "/netfile",
+                                                load_config(dir),
+                                                "./" + train_dir + "/" + dir + "/tensorboard",
+                                                dir, logfile_level, console_level, device))
             train_one("./" + train_dir + "/" + dir + "/netfile",
-                load_config(dir),
-                "./" + train_dir + "/" + dir + "/tensorboard",
-                dir, logfile_level, console_level, device)
+                      load_config(dir),
+                      "./" + train_dir + "/" + dir + "/tensorboard",
+                      dir, logfile_level, console_level, device)
+            #p.start()
+            print("process started",p)
             pool.append(p)
         else:
+            print("directory ignored :",dir)
             continue
 
         # suspend if the processes are too many
         wait = True
         while wait:
-            time.sleep(5)
+            time.sleep(15)
             for p in pool:
                 alive = p.is_alive()
                 if not alive:

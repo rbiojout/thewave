@@ -30,16 +30,16 @@ class TestDataMatrices(TestCase):
     def test_num_train_samples(self):
         self.fail()
 
-    def test_test_indices(self):
+    def test_validation_indices(self):
         self.fail()
 
-    def test_num_test_samples(self):
+    def test_num_validation_samples(self):
         self.fail()
 
     def test_append_experience(self):
         self.fail()
 
-    def test_get_test_set(self):
+    def get_validation_set(self):
         self.fail()
 
     def test_get_training_set(self):

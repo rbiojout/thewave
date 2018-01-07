@@ -14,9 +14,9 @@ class BEST(TDAgent):
             from thewave.tools.trade import get_test_data
             from thewave.tools.configprocess import preprocess_config
             import json
-            with open("thewave/net_config.json") as file:
-                config = json.load(file)
-            config = preprocess_config(config)
+            #with open("thewave/net_config.json") as file:
+            #    config = json.load(file)
+            config = preprocess_config(self.config)
             data = get_test_data(config)
             data = data.T
             n, m = data.shape

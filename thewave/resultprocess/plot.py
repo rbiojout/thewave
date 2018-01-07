@@ -58,7 +58,7 @@ def plot_backtest(config, algos, labels=None):
             results.append(np.cumprod(execute_backtest(algo, config)))
             logging.info("finish executing "+algo)
 
-    start, end = _extract_test(config)
+    start, end = _extract_validation(config)
     #timestamps = np.linspace(start, end, len(results[0]))
     timestamps = np.linspace(pd.Timestamp(start).value, pd.Timestamp(end).value, len(results[0]), dtype=np.int64)
     #dates = [start + datetime.timedelta(days=x) for x in range((end-start).days + 1)]
@@ -121,6 +121,7 @@ def table_backtest(config, algos, labels=None, format="raw",
     labels = list(labels)
     for i, algo in enumerate(algos):
         if algo.isdigit():
+            # @TODO use the test and not the validation segment
             portfolio_changes = _load_from_summary(algo, config)
             logging.info("load index " + algo + " from csv file")
         else:
@@ -137,7 +138,7 @@ def table_backtest(config, algos, labels=None, format="raw",
 
     dataframe = pd.DataFrame(results, index=labels)
 
-    start, end = _extract_test(config)
+    start, end = _extract_validation(config)
     #start = datetime.datetime.fromtimestamp(start - start%config["input"]["global_period"])
     #end = datetime.datetime.fromtimestamp(end - end%config["input"]["global_period"])
 
@@ -158,7 +159,7 @@ def file_backtest(config, algo):
     logging.info("start executing back test")
     backtest = get_backtester(algo, config)
     print("test omega :", backtest.test_omega_vector)
-    start, end = _extract_test(config)
+    start, end = _extract_validation(config)
     tickers = backtest._ticker_name_list
     history = HistoryManager(tickers=tickers,online=False)
     datas = history.get_global_panel(start=start,end=end,tickers=tickers,features=['close'],online=False)
@@ -170,9 +171,9 @@ def file_backtest(config, algo):
 
     # stock history
     # need for the date time index to be present
-    lastclose = pd.DataFrame(backtest.test_set['lastclose'])
-    lastclose.columns = tickers
-    lastclose['USD'] = np.ones(lastclose.shape[0])
+    #lastclose = pd.DataFrame(backtest.validation_set['lastclose'])
+    #lastclose.columns = tickers
+    #lastclose['USD'] = np.ones(lastclose.shape[0])
 
     # prices per step
     print("test pv :", backtest.test_pc_vector)
@@ -199,11 +200,11 @@ def file_backtest(config, algo):
     print("THIS IS THE END")
 
 
-def _extract_test(config):
+def _extract_validation(config):
     global_start = parse_time(config["input"]["start_date"])
     global_end = parse_time(config["input"]["end_date"])
     span = global_end - global_start
-    start = global_end - datetime.timedelta(int(config["input"]["test_portion"] * span.days))
+    start = global_end - datetime.timedelta(int(config["input"]["validation_portion"] * span.days))
     end = global_end
     return start, end
 
@@ -224,3 +225,15 @@ def _load_from_summary(index, config):
         raise ValueError("the date of this index is not the same as the default config")
     return np.fromstring(history_string, sep=",")[:-1]
 
+def _evaluate_test(index, config):
+    """     """
+    dataframe = pd.DataFrame.from_csv("./train_package/train_summary.csv")
+    histoframe = dataframe.loc[int(index)]
+    # take the last one in case of multiple reruns
+    if isinstance(histoframe, pd.core.frame.DataFrame):
+        histoframe = histoframe.iloc[-1, :]
+
+    history_string = histoframe["backtest_test_history"]
+    if not check_input_same(config, json.loads(histoframe["config"])):
+        raise ValueError("the date of this index is not the same as the default config")
+    return np.fromstring(history_string, sep=",")[:-1]

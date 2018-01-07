@@ -9,7 +9,7 @@ class TDAgent(object):
     parent class for algorithms(new-style)
     '''
 
-    def __init__(self, history=None, cum_ret=None, last_b=None):
+    def __init__(self, history=None, cum_ret=None, last_b=None, config=None):
         '''init
         :param X: input
         :param history: a history list of relative price vector
@@ -17,11 +17,14 @@ class TDAgent(object):
         self.history = history
         self.cum_ret = cum_ret
         self.last_b = last_b
+        self.config=config
 
     @property
     def agent(self):
         return self._agent
 
+    def set_config(self,config):
+        self.config=config
 
     def decide_by_history(self, x, last_b):
         '''calculate new portfolio weight vector.

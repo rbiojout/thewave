@@ -19,8 +19,7 @@ def get_ticker_name_list(config, online):
         start = parse_time(input_config["start_date"])
         end = parse_time(input_config["end_date"])
         volume_forward = get_volume_forward(end - start,
-                                            input_config["test_portion"]
-                                            + input_config["validation_portion"],
+                                            input_config["validation_portion"],
                                             input_config["portion_reversed"])
     else:
         end = time()
@@ -53,6 +52,20 @@ def calculate_pv_after_commission(w1, w0, commission_rate):
     return mu1
 
 
+def get_validation_data(config):
+    """
+    :return : a 2d numpy array with shape(ticker_number, periods),
+     each element the relative price
+    """
+    config["input"]["feature_list"] = "['close']"
+    config["input"]["norm_method"] = "relative"
+    config["input"]["global_period"] = config["input"]["global_period"]
+    price_matrix = DataMatrices.create_from_config(config)
+    validation_set = price_matrix.get_validation_set()["y"][:, 0, :].T
+    validation_set = np.concatenate((np.ones((1, validation_set.shape[1])), validation_set), axis=0)
+    return validation_set
+
+
 def get_test_data(config):
     """
     :return : a 2d numpy array with shape(ticker_number, periods),
@@ -66,21 +79,20 @@ def get_test_data(config):
     test_set = np.concatenate((np.ones((1, test_set.shape[1])), test_set), axis=0)
     return test_set
 
-
-def asset_vector_to_dict(ticker_list, vector, with_BTC=True):
+def asset_vector_to_dict(ticker_list, vector, with_USD=True):
     vector = np.squeeze(vector)
     dict_ticker = {}
-    if with_BTC:
-        dict_ticker['BTC'] = vector[0]
+    if with_USD:
+        dict_ticker['USD'] = vector[0]
     for i, name in enumerate(ticker_list):
         if vector[i+1] > 0:
             dict_ticker[name] = vector[i + 1]
     return dict_ticker
 
 
-def save_test_data(config, file_name="test_data", output_format="csv"):
+def save_validation_data(config, file_name="validation_data", output_format="csv"):
     if output_format == "csv":
-        matrix = get_test_data(config)
+        matrix = get_validation_data(config)
         with open(file_name+"."+output_format, 'wb') as f:
             np.savetxt(f, matrix.T, delimiter=";")
 

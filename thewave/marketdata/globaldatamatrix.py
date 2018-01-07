@@ -128,9 +128,8 @@ class HistoryManager:
 
         try:
             for ticker in tickers:
-                print('DB REQUEST for ticker :', ticker)
                 for feature in features:
-                    print('feature :', feature)
+                    logging.info("DB REQUEST for ticker: %s feature: %s" % (ticker, feature))
                     # NOTE: transform the start date to end date
                     if feature == "open":
                         sql = ("SELECT date, adj_open as open FROM History WHERE"
@@ -176,7 +175,7 @@ class HistoryManager:
     # add new history data into the marketdata
     def update_ticker(self, ticker):
         connection = sqlite3.connect(DATABASE_DIR)
-        print('update ticker:', ticker)
+        logging.info("DB Update for ticker: %s " % (ticker))
 
         min_date = None
         max_date = None
@@ -192,8 +191,6 @@ class HistoryManager:
             #min_date = cursor.execute('SELECT MIN(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
             #max_date = cursor.execute('SELECT MAX(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
 
-            print('min date:', min_date, type(min_date))
-            print('max date:', max_date, type(max_date))
             if min_date==None or max_date==None:
                 self.fill_ticker(ticker, cursor)
             else:

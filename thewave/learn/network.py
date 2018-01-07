@@ -27,11 +27,11 @@ class NeuralNetWork:
 
 
 class CNN(NeuralNetWork):
-    # input_shape (features, rows, columns)
+    # input_shape (features, rows=assets, columns=batch)
     def __init__(self, feature_number, rows, columns, layers, device):
         NeuralNetWork.__init__(self, feature_number, rows, columns, layers, device)
 
-    # grenrate the operation, the forward computaion
+    # generate the operation, the forward computation
     def _build_network(self, layers):
         network = tf.transpose(self.input_tensor, [0, 2, 3, 1])
         # [batch, assets, window, features]
@@ -68,7 +68,7 @@ class CNN(NeuralNetWork):
                 network = tflearn.layers.conv.avg_pool_2d(network, layer["strides"])
             elif layer["type"] == "LocalResponseNormalization":
                 network = tflearn.layers.normalization.local_response_normalization(network)
-            elif layer["type"] == "EIIE_Output_1":
+            elif layer["type"] == "EIIE_Output":
                 width = network.get_shape()[2]
                 network = tflearn.layers.conv_2d(network, 1, [1, width], padding="valid",
                                                  regularizer=layer["regularizer"],
@@ -84,7 +84,7 @@ class CNN(NeuralNetWork):
                                                   activation="softmax",
                                                   regularizer=layer["regularizer"],
                                                   weight_decay=layer["weight_decay"])
-            elif layer["type"] == "EIIE_Output":
+            elif layer["type"] == "EIIE_Output_WithW":
                 width = network.get_shape()[2]
                 height = network.get_shape()[1]
                 features = network.get_shape()[3]

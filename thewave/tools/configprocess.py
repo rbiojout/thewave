@@ -64,7 +64,8 @@ def fill_layers_default(layers):
         elif layer["type"] == "EIIE_LSTM" or layer["type"] == "EIIE_RNN":
             set_missing(layer, "dropouts", None)
         elif layer["type"] == "EIIE_Output" or\
-                layer["type"] == "Output_WithW":
+                layer["type"] == "Output_WithW" or\
+                layer["type"] == "EIIE_Output_WithW":
             set_missing(layer, "regularizer", None)
             set_missing(layer, "weight_decay", 0.0)
         elif layer["type"] == "DropOut":
@@ -136,7 +137,7 @@ def check_input_same(config1, config2):
         return False
     elif input1["end_date"] != input2["end_date"]:
         return False
-    elif input1["test_portion"] != input2["test_portion"]:
+    elif input1["validation_portion"] != input2["validation_portion"]:
         return False
     elif input1["window_size"] != input2["window_size"]:
         return False

@@ -17,9 +17,10 @@ def execute_backtest(algo, config):
     @:param algo: string representing the name the name of algorithms
     @:return: numpy array of portfolio changes
     """
+    # ticker number used for some algos like Uniform Buy And Hold
     ticker_number = len(parse_list(config["input"]["ticker_list"]))
 
-    agent, agent_type, net_dir = _construct_agent(algo, ticker_number)
+    agent, agent_type, net_dir = _construct_agent(algo, ticker_number, config)
     backtester = BackTest(config, agent=agent, agent_type=agent_type, net_dir=net_dir)
     backtester.start_trading()
     return backtester.test_pc_vector
@@ -36,7 +37,7 @@ def get_backtester(algo, config):
     backtester.start_trading()
     return backtester
 
-def _construct_agent(algo, ticker_number=10):
+def _construct_agent(algo, ticker_number, config):
     if algo.isdigit():
         agent = None
         agent_type = "nn"
@@ -47,6 +48,7 @@ def _construct_agent(algo, ticker_number=10):
             agent = ALGOS[algo](None, ticker_number)
         else:
             agent = ALGOS[algo]()
+            agent.set_config(config)
         agent_type = "traditional"
         net_dir = None
     else:

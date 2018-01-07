@@ -57,6 +57,7 @@ class TraderTrainer:
 
         self._matrix = DataMatrices.create_from_config(config)
 
+        self.validation_set = self._matrix.get_validation_set()
         self.test_set = self._matrix.get_test_set()
         if not config["training"]["fast_train"]:
             self.training_set = self._matrix.get_training_set()
@@ -80,7 +81,7 @@ class TraderTrainer:
         elif set_name == "training":
             feed = self.training_set
         elif set_name == "validation":
-            feed = self.training_set
+            feed = self.validation_set
         else:
             raise ValueError()
         result = self._agent.evaluate_tensors(feed["X"],feed["y"],last_w=feed["last_w"],
@@ -89,11 +90,20 @@ class TraderTrainer:
 
     @property
     def datamatrix(self):
+        """
+        :return: the datamatrix created from DataMatrices, include the training and test set
+        """
         return self._matrix
 
 
     @staticmethod
     def calculate_upperbound(y):
+        """
+        calculate for each step the maximum increase in y for the close and all the assets
+        then multiply to get the maximum possible return aver the period
+        :param y: the y vector from test set. Shape for y=[steps,features, assets]
+        :return:
+        """
         array = np.maximum.reduce(y[:, 0, :], 1)
         total = 1.0
         for i in array:
@@ -101,11 +111,16 @@ class TraderTrainer:
         return total
 
     def log_between_steps(self, step):
+        """
+        add informations for the steps into the log and the summary for tensorboard
+        :param step: the step for the log
+        :return:
+        """
         fast_train = self.train_config["fast_train"]
         tflearn.is_training(False, self._agent.session)
 
         summary, pv, v_pv, v_log_mean, v_loss, log_mean_free, weights= \
-            self._evaluate("test", self.summary,
+            self._evaluate("validation", self.summary,
                            self._agent.pv_vector,
                            self._agent.portfolio_value,
                            self._agent.log_mean,
@@ -127,7 +142,7 @@ class TraderTrainer:
         weights_shape = weights.shape
         logging.info('first weight %s is %s \n' % (weights_shape, weights[0]))
 
-        logging.info('the portfolio value on test set is %s\nlog_mean is %s\n'
+        logging.info('the portfolio value on validation set is %s\nlog_mean is %s\n'
                      'loss_value is %3f\nlog mean without commission fee is %3f\n' % \
                      (v_pv, v_log_mean, v_loss, log_mean_free))
         pv_shape = pv.shape
@@ -139,7 +154,7 @@ class TraderTrainer:
         elif v_pv > self.best_metric:
             self.best_metric = v_pv
             logging.info("get better model at %s steps,"
-                         " whose test portfolio value is %s" % (step, v_pv))
+                         " whose validation portfolio value is %s" % (step, v_pv))
             if self.save_path:
                 self._agent.save_model(self.save_path)
         self.check_abnormal(v_pv, weights)
@@ -150,13 +165,16 @@ class TraderTrainer:
 
 
     def next_batch(self):
+        """
+        prepare the next batch and return the elements
+        :return:
+        """
         batch = self._matrix.next_batch()
         batch_input = batch["X"]
         batch_y = batch["y"]
         batch_last_w = batch["last_w"]
         batch_w = batch["setw"]
-        batch_last_close = batch["lastclose"]
-        return batch_input, batch_y, batch_last_w, batch_w, batch_last_close
+        return batch_input, batch_y, batch_last_w, batch_w
 
     def __init_tensor_board(self, log_file_dir):
         """
@@ -180,8 +198,11 @@ class TraderTrainer:
         self.train_writer = tf.summary.FileWriter(location + '/train')
 
     def __print_upperbound(self):
-        upperbound_test = self.calculate_upperbound(self.test_set["y"])
-        logging.info("upper bound in test is %s" % upperbound_test)
+        """
+        :return: login info of upper bound possible for the test period
+        """
+        upperbound_validation = self.calculate_upperbound(self.validation_set["y"])
+        logging.info("upper bound in validation is %s" % upperbound_validation)
 
     def train_net(self, log_file_dir="./tensorboard", index="0"):
         """
@@ -202,14 +223,14 @@ class TraderTrainer:
         total_training_time = 0
         for i in range(self.train_config["steps"]):
             step_start = time.time()
-            x, y, last_w, setw, batch_last_close = self.next_batch()
+            x, y, last_w, setw = self.next_batch()
             finish_data = time.time()
             total_data_time += (finish_data - step_start)
             self._agent.train(x, y, last_w=last_w, setw=setw)
             total_training_time += time.time() - finish_data
             if i % 1000 == 0 and log_file_dir:
-                logging.info("average time for data accessing is %s"%(total_data_time/1000))
-                logging.info("average time for training is %s"%(total_training_time/1000))
+                logging.info("average time for data accessing is %s" % (total_data_time/1000))
+                logging.info("average time for training is %s" % (total_training_time/1000))
                 total_training_time = 0
                 total_data_time = 0
                 self.log_between_steps(i)
@@ -219,15 +240,18 @@ class TraderTrainer:
             best_agent = NNAgent(self.config, restore_dir=self.save_path)
             self._agent = best_agent
 
-        pv, log_mean = self._evaluate("test", self._agent.portfolio_value, self._agent.log_mean)
+        pv, log_mean = self._evaluate("validation", self._agent.portfolio_value, self._agent.log_mean)
         logging.warning('the portfolio value train No.%s is %s log_mean is %s,'
                         ' the training time is %d seconds' % (index, pv, log_mean, time.time() - starttime))
 
         return self.__log_result_csv(index, time.time() - starttime)
 
+    def test_predict(self):
+        pass
+
     def __log_result_csv(self, index, time):
         """
-        log the test batch result in the summary.csv according to the index of the training package
+        log the validation batch result in the summary.csv according to the index of the training package
         :param index:
         :param time:
         :return:
@@ -237,7 +261,7 @@ class TraderTrainer:
         csv_dir = './train_package/train_summary.csv'
         tflearn.is_training(False, self._agent.session)
         v_pv, v_log_mean, benefit_array, v_log_mean_free =\
-            self._evaluate("test",
+            self._evaluate("validation",
                            self._agent.portfolio_value,
                            self._agent.log_mean,
                            self._agent.pv_vector,

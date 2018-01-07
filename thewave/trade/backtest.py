@@ -9,7 +9,7 @@ from thewave.tools.trade import calculate_pv_after_commission
 class BackTest(trader.Trader):
     def __init__(self, config, net_dir=None, agent=None, agent_type="nn"):
         trader.Trader.__init__(self, 0, config, 0, net_dir,
-                               initial_BTC=1, agent=agent, agent_type=agent_type)
+                               initial_USD=1, agent=agent, agent_type=agent_type)
         if agent_type == "nn":
             data_matrices = self._rolling_trainer.data_matrices
         elif agent_type == "traditional":

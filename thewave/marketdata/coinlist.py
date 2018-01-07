@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from __future__ import print_function
 from __future__ import division
-from thewave.marketdata.quandlrequest import QuandlRequest
+from thewave.marketdata.poloniex import Poloniex
 from thewave.tools.data import get_chart_until_success
 import pandas as pd
 from datetime import datetime
@@ -9,55 +9,54 @@ import logging
 from thewave.constants import *
 
 
-class AssetList(object):
+class CoinList(object):
     def __init__(self, end, volume_average_days=1, volume_forward=0):
-
+        self._polo = Poloniex()
         # connect the internet to accees volumes
-        ticker = self._quandl.marketTicker()
+        vol = self._polo.marketVolume()
+        ticker = self._polo.marketTicker()
         pairs = []
-        tickers = []
+        coins = []
         volumes = []
         prices = []
 
-        logging.info("select ticker online from %s to %s" % (datetime.fromtimestamp(end-(DAY*volume_average_days)-
+        logging.info("select coin online from %s to %s" % (datetime.fromtimestamp(end-(DAY*volume_average_days)-
                                                                                   volume_forward).
                                                            strftime('%Y-%m-%d %H:%M'),
                                                            datetime.fromtimestamp(end-volume_forward).
                                                            strftime('%Y-%m-%d %H:%M')))
-
-
         for k, v in vol.items():
-            if k.startswith("USD_") or k.endswith("_BTC"):
+            if k.startswith("BTC_") or k.endswith("_BTC"):
                 pairs.append(k)
                 for c, val in v.items():
                     if c != 'BTC':
                         if k.endswith('_BTC'):
-                            tickers.append('reversed_' + c)
+                            coins.append('reversed_' + c)
                             prices.append(1.0 / float(ticker[k]['last']))
                         else:
-                            tickers.append(c)
+                            coins.append(c)
                             prices.append(float(ticker[k]['last']))
                     else:
                         volumes.append(self.__get_total_volume(pair=k, global_end=end,
                                                                days=volume_average_days,
                                                                forward=volume_forward))
-        self._df = pd.DataFrame({'ticker': tickers, 'pair': pairs, 'volume': volumes, 'price':prices})
-        self._df = self._df.set_index('ticker')
+        self._df = pd.DataFrame({'coin': coins, 'pair': pairs, 'volume': volumes, 'price':prices})
+        self._df = self._df.set_index('coin')
 
     @property
-    def allActiveTickers(self):
+    def allActiveCoins(self):
         return self._df
 
     @property
-    def allTickers(self):
-        return self._quandl.marketStatus().keys()
+    def allCoins(self):
+        return self._polo.marketStatus().keys()
 
     @property
     def polo(self):
-        return self._quandl
+        return self._polo
 
     def get_chart_until_success(self, pair, start, period, end):
-        return get_chart_until_success(self._quandl, pair, start, period, end)
+        return get_chart_until_success(self._polo, pair, start, period, end)
 
     # get several days volume
     def __get_total_volume(self, pair, global_end, days, forward):
