@@ -51,14 +51,15 @@ def plot_backtest(config, algos, labels=None):
     results = []
     for i, algo in enumerate(algos):
         if algo.isdigit():
-            results.append(np.cumprod(_load_from_summary(algo, config)))
+            #results.append(np.cumprod(_load_from_summary(algo, config)))
+            results.append(np.cumprod(execute_backtest(algo, config)))
             logging.info("load index "+algo+" from csv file")
         else:
             logging.info("start executing "+algo)
             results.append(np.cumprod(execute_backtest(algo, config)))
             logging.info("finish executing "+algo)
 
-    start, end = _extract_validation(config)
+    start, end = _extract_test(config)
     #timestamps = np.linspace(start, end, len(results[0]))
     timestamps = np.linspace(pd.Timestamp(start).value, pd.Timestamp(end).value, len(results[0]), dtype=np.int64)
     #dates = [start + datetime.timedelta(days=x) for x in range((end-start).days + 1)]
@@ -122,7 +123,8 @@ def table_backtest(config, algos, labels=None, format="raw",
     for i, algo in enumerate(algos):
         if algo.isdigit():
             # @TODO use the test and not the validation segment
-            portfolio_changes = _load_from_summary(algo, config)
+            #portfolio_changes = _load_from_summary(algo, config)
+            portfolio_changes = execute_backtest(algo, config)
             logging.info("load index " + algo + " from csv file")
         else:
             logging.info("start executing " + algo)
@@ -159,7 +161,8 @@ def file_backtest(config, algo):
     logging.info("start executing back test")
     backtest = get_backtester(algo, config)
     print("test omega :", backtest.test_omega_vector)
-    start, end = _extract_validation(config)
+
+    start, end = _extract_test(config)
     tickers = backtest._ticker_name_list
     history = HistoryManager(tickers=tickers,online=False)
     datas = history.get_global_panel(start=start,end=end,tickers=tickers,features=['close'],online=False)
@@ -208,6 +211,10 @@ def _extract_validation(config):
     end = global_end
     return start, end
 
+def _extract_test(config):
+    start = parse_time(config["backtest"]["start_test_date"])
+    end = parse_time(config["backtest"]["end_test_date"])
+    return start, end
 
 def _load_from_summary(index, config):
     """ load the backtest result form train_package/train_summary

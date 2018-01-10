@@ -2,6 +2,7 @@ import json
 import time
 import sys
 import quandl
+import logging
 from datetime import datetime
 
 if sys.version_info[0] == 3:
@@ -53,7 +54,8 @@ class QuandlRequest:
 
 
     def data(self, dataset='AAPL',args={}):
-        print('Quandl Query for: ','WIKI/'+dataset,' with args ', args)
+        logging.info('Quandl Query for WIKI/%s with args %s' % (dataset, args))
+        # print('Quandl Query for: ','WIKI/'+dataset,' with args ', args)
         return quandl.Dataset('WIKI/' + dataset).data(params=args)
 
 

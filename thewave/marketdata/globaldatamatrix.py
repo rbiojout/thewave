@@ -22,14 +22,13 @@ from thewave.tools.data import panel_fillna
 class HistoryManager:
     # if offline ,the ticker_list could be None
     # NOTE: return of the sqlite results is a list of tuples, each tuple is a row
-    def __init__(self, tickers = ('AAPL'), online=True):
+    def __init__(self, tickers = "['AAPL']", online=True):
         self.initialize_db()
 
         self._quandl_request = QuandlRequest()
 
         if online:
             for ticker in tickers:
-                print('Online request for DB :',ticker)
                 self.update_ticker(ticker)
 
         # self.__storage_period = FIVE_MINUTES  # keep this as 300
@@ -61,18 +60,11 @@ class HistoryManager:
                             ' PRIMARY KEY (ticker, date));')
             connection.commit()
 
-    def get_global_data_matrix(self, start, end, tickers=('AAPL','A'), features=('close','open')):
+    def get_global_data_matrix(self, start, end, tickers=['AAPL','A'], features=['close','open']):
         """
         :return a numpy ndarray whose axis is [feature, ticker, time]
         """
         return self.get_global_panel(start, end, tickers, features).values
-
-    # @TODO move to test
-    def test_panel(self):
-        start = date(2001,1, 1)
-        end = date (2017, 12, 1)
-        self.get_global_panel(start, end)
-        return
 
 
     def get_global_panel(self, start, end, tickers=('AAPL','A'),features=('close','open'), online=True):
@@ -192,12 +184,13 @@ class HistoryManager:
             #max_date = cursor.execute('SELECT MAX(date) FROM History WHERE ticker=?;', (ticker,)).fetchall()[0][0]
 
             if min_date==None or max_date==None:
+                logging.info("DB REQUEST CREATION for ticker: %s " % (ticker))
                 self.fill_ticker(ticker, cursor)
             else:
-                #@TODO don't request is up-to-date by checking max_date
                 now_ts = pd.Timestamp(datetime.now())
                 max_ts = pd.Timestamp(max_date)
                 if (max_date == None) or (now_ts - max_ts).days >1:
+                    logging.info("DB REQUEST UPDATE for ticker: %s from: %s" % (ticker, max_date))
                     ticker_data = self._quandl_request.data(ticker, {'start_date': max_date})
                     for tick in ticker_data:
                         cursor.execute('INSERT OR IGNORE INTO History (date, ticker, open, high, low, close, '

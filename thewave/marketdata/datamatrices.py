@@ -56,7 +56,7 @@ class DataMatrices:
 
         type_list = parse_list(feature_list)
         self.__features = type_list
-        self.feature_number = len(parse_list(feature_list))
+        self.feature_number = len(type_list)
         self.__history_manager = gdm.HistoryManager(tickers=tickers, online=online)
         # Panel with
         # Items are the features
@@ -103,6 +103,7 @@ class DataMatrices:
         self.__batch_size = batch_size
         self.__replay_buffer = None
         self.__delta = 0  # the count of global increased
+        # @TODO last index with training+validation+test
         end_index = self._train_ind[-1]
         self.__replay_buffer = rb.ReplayBuffer(start_index=self._train_ind[0],
                                                end_index=end_index,
@@ -197,16 +198,23 @@ class DataMatrices:
 
     @property
     def train_indices(self):
-        return self._train_ind[:-(self._window_size+1):]
+        #return self._train_ind[:-(self._window_size + 1):]
+        return self._train_ind
 
     @property
     def validation_indices(self):
-        return self._validation_ind[:-(self._window_size+1):]
-
+        #return self._validation_ind[:-(self._window_size+1):]
+        return self._validation_ind
 
     @property
     def test_indices(self):
-        return self._test_ind[:-(self._window_size + 1):]
+        # return self._validation_ind[:-(self._window_size+1):]
+        return self._test_ind
+
+    @property
+    def test_indices(self):
+        #return self._test_ind[:-(self._window_size + 1):]
+        return self._test_ind
 
 
     def append_experience(self, online_w=None):
@@ -215,6 +223,7 @@ class DataMatrices:
         Let it be None if in the backtest case.
         """
         self.__delta += 1
+        # @TODO use test_ind
         self._train_ind.append(self._train_ind[-1]+1)
         appended_index = self._train_ind[-1]
         self.__replay_buffer.append_experience(appended_index)
@@ -223,11 +232,12 @@ class DataMatrices:
         return self.__pack_samples(self.validation_indices)
 
     def get_training_set(self):
-        return self.__pack_samples(self._train_ind[:-self._window_size])
+        #return self.__pack_samples(self._train_ind[:-self._window_size])
+        return self.__pack_samples(self.train_indices)
 
     # @TODO change to REAL test
     def get_test_set(self):
-        return self.__pack_samples(self._test_ind[:-self._window_size])
+        return self.__pack_samples(self.test_indices)
 
     def next_batch(self):
         """
@@ -273,6 +283,12 @@ class DataMatrices:
         # return self.__global_data.iloc(axis=0)[ind:ind+self._window_size+1,:]
 
     def __divide_data(self, validation_portion, portion_reversed):
+        """
+        split the data into training, validation and test
+        :param validation_portion: part of validation into the training_validation datas
+        :param portion_reversed: true is validation means the share of training, false else
+        :return:
+        """
         train_portion = 1 - validation_portion
         s = float(train_portion + validation_portion)
         if portion_reversed:
@@ -291,7 +307,11 @@ class DataMatrices:
         # reversed and normal version
         self._train_ind = list(self._train_ind)
         self._num_train_samples = len(self._train_ind)
-        self._num_validation_samples = len(self.validation_indices)
+
+
+        self._validation_ind = self._validation_ind[:-(self._window_size + 1)]
+        self._validation_ind = list(self._validation_ind)
+        self._num_validation_samples = len(self._validation_ind)
 
         # test indices
         self._test_ind = np.arange(start=self._num_train_validation_periods, stop=self._num_train_validation_periods+self._num_test_periods)

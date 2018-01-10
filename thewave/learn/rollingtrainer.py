@@ -29,6 +29,7 @@ class RollingTrainer(TraderTrainer):
     def rolling_training_steps(self):
         return self.config["trading"]["rolling_training_steps"]
 
+
     def __rolling_logging(self):
         fast_train = self.train_config["fast_train"]
         if not fast_train:

@@ -7,6 +7,7 @@ from argparse import ArgumentParser
 from datetime import datetime
 from thewave.tools.configprocess import preprocess_config
 from thewave.tools.configprocess import load_config
+from thewave.tools.shortcut import execute_backtest
 from thewave.resultprocess import plot
 
 
@@ -18,7 +19,7 @@ def build_parser():
     parser = ArgumentParser()
     parser.add_argument("--mode",dest="mode",
                         help="start mode, train, generate, download_data"
-                             " backtest",
+                             " backtest, plot, table, resultfile",
                         metavar="MODE", default="train")
     parser.add_argument("--processes", dest="processes",
                         help="number of processes you want to start to train the network",
@@ -27,10 +28,10 @@ def build_parser():
                         help="repeat times of generating training subfolder",
                         default="1")
     parser.add_argument("--algo",
-                        help="algo name or indexes of training_package ",
+                        help="single algo name or indexes of training_package ",
                         dest="algo")
     parser.add_argument("--algos",
-                        help="algo names or indexes of training_package, seperated by \",\"",
+                        help="list of algo names or indexes of training_package, seperated by \",\"",
                         dest="algos")
     parser.add_argument("--labels", dest="labels",
                         help="names that will shown in the figure caption or table header")
@@ -46,15 +47,8 @@ def build_parser():
 
 
 def main():
-    # parser = build_parser()
-    # options = parser.parse_args()
-    # hm = HistoryManager(['AAPL'])
-    # hm.test_panel()
-
     parser = build_parser()
     options = parser.parse_args()
-
-    mode = "train"
 
     if options.mode == "train":
         import thewave.autotrain.training
@@ -80,13 +74,17 @@ def main():
         print("DM global_weights = ", dm.global_weights)
         print("dm.ticker_list ", dm.ticker_list)
         print('num_train_samples ', dm.num_train_samples)
-        print('num_test_samples ', dm.num_test_samples)
-        print('test_indices ', dm.test_indices)
+        print('num_validation_samples ', dm.num_validation_samples)
+        print('validation_indices ', dm.validation_indices)
 
-        print('get_test_set ', dm.get_test_set()['X'].shape)
+        print('get_validation_set ', dm.get_validation_set()['X'].shape)
         print('get_training_set ', dm.get_training_set()['X'].shape)
         print('END')
-    # python main.py --mode=plot  --algos=5,olmar,ons,ubah --labels=nntrader,olmar,ons,ubah
+    elif options.mode == "backtest":
+        config = _config_by_algo(options.algo)
+        _set_logging_by_algo(logging.DEBUG, logging.DEBUG, options.algo, "backtestlog")
+        execute_backtest(options.algo, config)
+    # python main.py --mode=plot --algo=5 --algos=5,olmar,ons,ubah --labels=nntrader,olmar,ons,ubah
     elif options.mode == "plot":
         logging.basicConfig(level=logging.INFO)
         algo = options.algo
@@ -97,8 +95,9 @@ def main():
         else:
             labels = algos
         plot.plot_backtest(load_config(algo), algos, labels)
-    # python main.py --mode=table  --algos=5,olmar,ons,ubah --labels=nntrader,olmar,ons,ubah
+    # python main.py --mode=table  --algo=5 --algos=5,olmar,ons,ubah --labels=nntrader,olmar,ons,ubah
     elif options.mode == "table":
+        logging.basicConfig(level=logging.DEBUG)
         algos = options.algos.split(",")
         algo = options.algo
         if options.labels:
@@ -107,6 +106,10 @@ def main():
         else:
             labels = algos
         plot.table_backtest(load_config(algo), algos, labels, format=options.format)
+    elif options.mode == "resultfile":
+        logging.basicConfig(level=logging.INFO)
+        algo = options.algo
+        plot.file_backtest(load_config(algo), algo)
 
 def _set_logging_by_algo(console_level, file_level, algo, name):
     if algo.isdigit():
