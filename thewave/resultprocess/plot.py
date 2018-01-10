@@ -6,7 +6,7 @@ import pandas as pd
 import logging
 import json
 import numpy as np
-import datetime
+from datetime import datetime, timedelta
 from thewave.marketdata.globaldatamatrix import HistoryManager
 from thewave.tools.indicator import max_drawdown, sharpe, positive_count, negative_count, moving_accumulate
 from thewave.tools.configprocess import parse_time, check_input_same
@@ -169,7 +169,7 @@ def file_backtest(config, algo):
 
     window_size = int(config["input"]["window_size"])
 
-    stock_history = datas.iloc[0,:,window_size+1:].T
+    stock_history = datas.loc['close',:,:].T
     stock_history['USD'] = np.ones(stock_history.shape[0])
 
     # stock history
@@ -213,6 +213,8 @@ def _extract_validation(config):
 
 def _extract_test(config):
     start = parse_time(config["backtest"]["start_test_date"])
+    window_size = int(config["input"]["window_size"])
+    start = start + timedelta(days = window_size +1 )
     end = parse_time(config["backtest"]["end_test_date"])
     return start, end
 

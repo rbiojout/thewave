@@ -219,6 +219,7 @@ class DataMatrices:
 
     def append_experience(self, online_w=None):
         """
+        store in the ReplayBuffer a new index
         :param online_w: (number of assets + 1, ) numpy array
         Let it be None if in the backtest case.
         """
