@@ -20,6 +20,7 @@ class BackTest(trader.Trader):
         self.__test_set = data_matrices.get_test_set()
         self.__test_length = self.__test_set["X"].shape[0]
         self._total_steps = self.__test_length
+        self._history_close_matrix = self.__test_set["history_close"].T
         self.__test_pv = 1.0
         self.__test_pc_vector = []
         self.__test_omega = []
@@ -28,6 +29,10 @@ class BackTest(trader.Trader):
     @property
     def test_set(self):
         return self.__test_set
+
+    @property
+    def history_close_matrix(self):
+        return self._history_close_matrix
 
     @property
     def test_pv(self):
@@ -89,6 +94,7 @@ class BackTest(trader.Trader):
         logging.info("the step is {}".format(self._steps))
         logging.debug("the raw omega is {}".format(omega))
         future_price = np.concatenate((np.ones(1), self.__get_matrix_y()))
+        logging.debug("the future price vector is {}".format(future_price))
         pv_after_commission = calculate_pv_after_commission(omega, self._last_omega, self._commission_rate)
         self.__mu.append(pv_after_commission)
         portfolio_change = pv_after_commission * np.dot(omega, future_price)

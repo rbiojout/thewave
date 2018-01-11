@@ -197,8 +197,8 @@ class HistoryManager:
                                        'volume, ex_dividend, '
                                        'adj_open, adj_high, adj_low, adj_close, adj_volume) '
                                        'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                                       (tick[0], ticker, tick[2], tick[3], tick[4], tick[5],
-                                        tick[6], tick[7],
+                                       (tick[0], ticker, tick[1], tick[2], tick[3], tick[4],
+                                        tick[5], tick[6],
                                         tick[8], tick[9], tick[10], tick[11], tick[12]))
 
             # if there is no data
@@ -213,7 +213,7 @@ class HistoryManager:
                            'volume, ex_dividend, '
                            'adj_open, adj_high, adj_low, adj_close, adj_volume) '
                            'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                           (tick[0], ticker, tick[2], tick[3], tick[4], tick[5],
-                            tick[6], tick[7],
+                           (tick[0], ticker, tick[1], tick[2], tick[3], tick[4],
+                            tick[5], tick[6],
                             tick[8], tick[9], tick[10], tick[11], tick[12]))
 

@@ -260,7 +260,9 @@ class DataMatrices:
         M = np.array(M)
         X = M[:, :, :, :-1]
         y = M[:, :, :, -1] / M[:, 0, None, :, -2]
-        return {"X": X, "y": y, "last_w": last_w, "setw": setw}
+
+        history_close = self.__global_data.iloc[0,:,slice(indexs[0]+self._window_size+1, indexs[-1]+self._window_size+1)]
+        return {"X": X, "y": y, "last_w": last_w, "setw": setw, "history_close": history_close}
 
     # volume in y is the volume in next access period
     def get_no_norm_submatrix(self, ind):
@@ -274,7 +276,7 @@ class DataMatrices:
 
         # we extract an array of the last values of 'close' for all tickers and transform to an array
         last = np.array(self.__global_data.loc['close',:,:].iloc[:,ind+self._window_size])
-        last.shape = (1,len(self.tickers),1)
+        last = np.reshape(last, (1, len(self.tickers), 1))
 
         # we recover the sequence including the value after the squence window
         sequence = self.__global_data.values[:,:, ind:ind+self._window_size+1]
