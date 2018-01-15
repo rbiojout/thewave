@@ -89,6 +89,7 @@ class HistoryManager:
         # construct string for sql query regarding tickers
         # need to remove last coma when only one entry
         tickers_s = tuple(tickers) if len(tickers)>1 else "('"+tickers[0]+"')"
+
         # select the min dates
         sqlmin = 'select ticker, min(date) as date from History WHERE ticker IN {ticker} group by ticker'.format(ticker=tickers_s)
         min_date_frame = pd.read_sql_query(sqlmin, connection, parse_dates=['date'])
@@ -99,22 +100,21 @@ class HistoryManager:
         #print(' min_date ', min_date)
 
 
+        # select the dates for the Panel
+        sqldate = ("SELECT date from History WHERE ticker IN {ticker} AND date >= \"{start}\" AND date<=\"{end}\" "
+                    "GROUP BY date".format(ticker=tickers_s, start=min_date, end=end))
 
-        #sql = "SELECT * from History WHERE date > \"{mindate}\" ORDER BY date, ticker".format(mindate=min_date)
-        sql = ("SELECT {features}, date, ticker from History WHERE ticker IN {ticker} AND date > \"{mindate}\" "
-               "GROUP BY ticker, date".format(features=', '.join(features), ticker=tickers_s, mindate=min_date))
-        #print('sql :', sql)
+        df = pd.read_sql_query(sqldate, connection, parse_dates=['date'], index_col=['date'])
 
-        df = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date', 'ticker'])
-
-        #print("df dtypes :", df.dtypes)
+        print("df dtypes :", df.dtypes)
 
         #print("DATABASE collected :", df)
 
         # time_index = pd.to_datetime(list(range(int(start), int(end)+1, 3600*24)),unit='s')
         # @TODO frequency change
-        time_index = pd.date_range(start=min_date, end=end, freq='D')
-        #time_index = df.index.levels[0]
+        # time_index = pd.date_range(start=min_date, end=end, freq='D')
+        time_index = df.index
+
         #print("IMPORTANT Number of index ", len(time_index))
         panel = pd.Panel(items=features, major_axis=tickers, minor_axis=time_index, dtype=np.float32)
 
@@ -157,7 +157,7 @@ class HistoryManager:
                                                     index_col="date")
                     # serial_data = pd.TimeSeries(serial_data.squeeze(), index = serial_data.index)
                     panel.loc[feature, ticker, serial_data.index] = serial_data.squeeze()
-                    panel = panel_fillna(panel, "both")
+                    # panel = panel_fillna(panel, "both")
         finally:
             connection.commit()
             connection.close()

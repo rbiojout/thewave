@@ -1,5 +1,6 @@
 from __future__ import absolute_import, division, print_function
 import numpy as np
+import pandas as pd
 from thewave.trade import trader
 from thewave.marketdata.datamatrices import DataMatrices
 import logging
@@ -21,6 +22,9 @@ class BackTest(trader.Trader):
         self.__test_length = self.__test_set["X"].shape[0]
         self._total_steps = self.__test_length
         self._history_close_matrix = self.__test_set["history_close"].T
+        # add cash
+        self._history_close_matrix.insert(0,'USD', np.ones(self._history_close_matrix.shape[0]))
+        self.__shares_matrix = []
         self.__test_pv = 1.0
         self.__test_pc_vector = []
         self.__test_omega = []
@@ -32,7 +36,21 @@ class BackTest(trader.Trader):
 
     @property
     def history_close_matrix(self):
+        """
+        USD added
+        :return: the history close used is the t
+        """
         return self._history_close_matrix
+
+    @property
+    def shares_matrix(self):
+        """
+        convert to a DataFrame with the date index
+        :return:
+        """
+        columns_shares = ['SHARES ' + x for x in self.history_close_matrix.columns]
+        shares = pd.DataFrame(self.__shares_matrix, index=self.history_close_matrix.index, columns= columns_shares)
+        return shares
 
     @property
     def test_pv(self):
@@ -95,8 +113,21 @@ class BackTest(trader.Trader):
         logging.debug("the raw omega is {}".format(omega))
         future_price = np.concatenate((np.ones(1), self.__get_matrix_y()))
         logging.debug("the future price vector is {}".format(future_price))
+        quote_price_close = (self.__test_set["history_close"]).iloc[:,self._steps]
+        quote_price_previous = np.concatenate( [np.ones(1),
+                                np.divide(quote_price_close.values, self.__get_matrix_y()) ])
+        # impact of commission (mu)
         pv_after_commission = calculate_pv_after_commission(omega, self._last_omega, self._commission_rate)
         self.__mu.append(pv_after_commission)
+
+        # evaluate the shares of assets
+        last_capital = self._total_capital*pv_after_commission
+        split_assets = np.multiply(last_capital, omega)
+        logging.debug("the split of assets is {}".format(split_assets))
+        shares = np.divide(split_assets, quote_price_previous)
+        self.__shares_matrix.append(shares)
+        logging.debug("the number of assets is {}".format(shares))
+
         portfolio_change = pv_after_commission * np.dot(omega, future_price)
         self._total_capital *= portfolio_change
         self._last_omega = pv_after_commission * omega * \

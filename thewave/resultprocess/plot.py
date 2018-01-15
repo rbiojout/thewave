@@ -63,7 +63,7 @@ def plot_backtest(config, algos, labels=None):
     #timestamps = np.linspace(start, end, len(results[0]))
     timestamps = np.linspace(pd.Timestamp(start).value, pd.Timestamp(end).value, len(results[0]), dtype=np.int64)
     #dates = [start + datetime.timedelta(days=x) for x in range((end-start).days + 1)]
-    dates = [start + datetime.timedelta(days=x) for x in range(len(results[0]))]
+    dates = [start + timedelta(days=x) for x in range(len(results[0]))]
 
     #dates = [datetime.datetime.fromtimestamp(int(ts)-int(ts)%config["input"]["global_period"])
      #        for ts in timestamps]
@@ -162,15 +162,14 @@ def file_backtest(config, algo):
     backtest = get_backtester(algo, config)
     print("test omega :", backtest.test_omega_vector)
 
-    start, end = _extract_test(config)
+
     tickers = backtest._ticker_name_list
-    history = HistoryManager(tickers=tickers,online=False)
-    datas = history.get_global_panel(start=start,end=end,tickers=tickers,features=['close'],online=False)
+    tickers.insert(0, 'USD')
 
-    window_size = int(config["input"]["window_size"])
-
-    stock_history = datas.loc['close',:,:].T
-    stock_history['USD'] = np.ones(stock_history.shape[0])
+    # closing prices
+    stock_history = backtest.history_close_matrix
+    # composition of SHARES in the portfolio
+    shares_history = backtest.shares_matrix
 
     # stock history
     # need for the date time index to be present
@@ -180,18 +179,17 @@ def file_backtest(config, algo):
 
     # prices per step
     print("test pv :", backtest.test_pc_vector)
-    tickers.insert(0,'USD')
+    # tickers.insert(0,'USD')
     label_history = ['Omega '+ x for x in tickers]
     test_history = pd.DataFrame(backtest.test_omega_vector, columns=label_history)
     test_history = test_history.set_index(stock_history.index.values)
     test_history['pv']=np.cumprod(backtest.test_pc_vector)
     test_history['mu'] = backtest.test_mu_vector
     for ticker in tickers:
-        test_history['Share ' + ticker] = test_history['pv'] * test_history['Omega ' + ticker] / stock_history[ticker]
-    for ticker in tickers:
-        buy_sell = np.diff(test_history['Share ' + ticker])
-        test_history['Buy/Sell ' + ticker] = np.insert(buy_sell, 0, test_history['Share '+ticker][0])
-    frames = [stock_history, test_history]
+        buy_sell = np.diff(shares_history['SHARES ' + ticker])
+        test_history['BUY/SELL ' + ticker] = np.insert(buy_sell, 0, shares_history['SHARES ' + ticker][0])
+
+    frames = [stock_history, shares_history, test_history]
     result = pd.concat(frames, axis=1)
 
     result.to_csv("./train_package/"+algo+"/backtest-"+algo+".csv", mode='w')
@@ -207,7 +205,7 @@ def _extract_validation(config):
     global_start = parse_time(config["input"]["start_date"])
     global_end = parse_time(config["input"]["end_date"])
     span = global_end - global_start
-    start = global_end - datetime.timedelta(int(config["input"]["validation_portion"] * span.days))
+    start = global_end - timedelta(int(config["input"]["validation_portion"] * span.days))
     end = global_end
     return start, end
 

@@ -117,6 +117,8 @@ class NNAgent:
             return -tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output[:] * self.__future_price, reduction_indices=[1])
                                           -tf.reduce_sum(tf.abs(self.__net.output[:, 1:] - self.__net.previous_w)
                                                          *self.__commission_ratio, reduction_indices=[1])))
+        def loss_function9():
+            return -tf.reduce_max(tf.log(self.pv_vector))
 
         loss_function = loss_function5
         if self.__config["training"]["loss_function"] == "loss_function4":
@@ -129,6 +131,8 @@ class NNAgent:
             loss_function = loss_function7
         elif self.__config["training"]["loss_function"] == "loss_function8" or "with_last_w":
             loss_function = with_last_w
+        elif self.__config["training"]["loss_function"] == "loss_function9":
+            loss_function = loss_function9
 
         loss_tensor = loss_function()
         regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)

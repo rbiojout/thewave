@@ -261,7 +261,7 @@ class DataMatrices:
         X = M[:, :, :, :-1]
         y = M[:, :, :, -1] / M[:, 0, None, :, -2]
 
-        history_close = self.__global_data.iloc[0,:,slice(indexs[0]+self._window_size+1, indexs[-1]+self._window_size+1)]
+        history_close = self.__global_data.iloc[0,:,slice(indexs[0]+self._window_size, indexs[-1]+self._window_size+1 )]
         return {"X": X, "y": y, "last_w": last_w, "setw": setw, "history_close": history_close}
 
     # volume in y is the volume in next access period

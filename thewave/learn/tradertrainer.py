@@ -127,7 +127,7 @@ class TraderTrainer:
                            self._agent.loss,
                            self._agent.log_mean_free,
                            self._agent.portfolio_weights)
-        self.test_writer.add_summary(summary, step)
+        self.validate_writer.add_summary(summary, step)
 
         if not fast_train:
             summary, loss_value = self._evaluate("training", self.summary, self._agent.loss)
@@ -196,6 +196,7 @@ class TraderTrainer:
                                                     self._agent.session.graph)
         self.test_writer = tf.summary.FileWriter(location + '/test')
         self.train_writer = tf.summary.FileWriter(location + '/train')
+        self.validate_writer = tf.summary.FileWriter(location + '/validate')
 
     def __print_upperbound(self):
         """
