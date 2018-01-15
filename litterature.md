@@ -30,6 +30,9 @@ A Deep Reinforcement Learning Framework for the Financial Portfolio Management P
 
 GITHUB https://github.com/ZhengyaoJiang/PGPortfolio https://github.com/wassname/rl-portfolio-management
 
+Deep Reinforcement Learning for Portfolio Management (2017)
+http://www-scf.usc.edu/~zhan527/post/cs599/
+
 ## Deep Learning
 Deep learning with long short-term memory networks for financial market predictions (2017) https://www.econstor.eu/handle/10419/157808
 
