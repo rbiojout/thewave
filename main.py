@@ -107,7 +107,7 @@ def main():
             labels = algos
         plot.table_backtest(load_config(algo), algos, labels, format=options.format)
     elif options.mode == "resultfile":
-        logging.basicConfig(level=logging.INFO)
+        logging.basicConfig(level=logging.DEBUG)
         algo = options.algo
         plot.file_backtest(load_config(algo), algo)
 

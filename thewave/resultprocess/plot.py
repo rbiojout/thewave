@@ -1,4 +1,7 @@
 from __future__ import absolute_import, print_function, division
+
+from copy import copy, deepcopy
+
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib import rc
@@ -11,6 +14,7 @@ from thewave.marketdata.globaldatamatrix import HistoryManager
 from thewave.tools.indicator import max_drawdown, sharpe, positive_count, negative_count, moving_accumulate
 from thewave.tools.configprocess import parse_time, check_input_same
 from thewave.tools.shortcut import execute_backtest, get_backtester
+
 
 # the dictionary of name of indicators mapping to the function of related indicators
 # input is portfolio changes
@@ -162,39 +166,72 @@ def file_backtest(config, algo):
     backtest = get_backtester(algo, config)
     print("test omega :", backtest.test_omega_vector)
 
-
-    tickers = backtest._ticker_name_list
-    tickers.insert(0, 'USD')
+    ticker_name_list_no_cash = backtest.ticker_name_list
+    ticker_name_list_with_cash = backtest.ticker_name_list_with_cash
 
     # closing prices
-    stock_history = backtest.history_close_matrix
+    stock_history = backtest.history_close_data
     # composition of SHARES in the portfolio
-    shares_history = backtest.shares_matrix
+    positions_history = backtest.positions_history()
 
     # stock history
     # need for the date time index to be present
     #lastclose = pd.DataFrame(backtest.validation_set['lastclose'])
     #lastclose.columns = tickers
-    #lastclose['USD'] = np.ones(lastclose.shape[0])
+    #lastclose['cash'] = np.ones(lastclose.shape[0])
+
+    # extract the returns as a pandas Series (Daily returns of the strategy, noncumulative)
+    returns = backtest.returns_data()
+
+    # extract the positions as a pandas Dataframe
+    # Daily net position values.
+    #   - Time series of dollar amount invested in each position and cash.
+    #   - Days where stocks are not held can be represented by 0 or NaN.
+    #   - Non - working capital is labelled 'cash'
+    #   - Example:
+    #       index           'AAPL'         'MSFT'           cash
+    #       2004 - 01 - 09  13939.3800      -14012.9930     711.5585
+    #       2004 - 01 - 12  14492.6300      -14624.8700     27.1821
+    #       2004 - 01 - 13  -13853.2800     13653.6400      -43.6375
+    positions = backtest.positions_history(prefix=False)
+
+    # extract the transactions as a pandas DataFrame
+    # Executed trade volumes and fill prices.
+    #   - One row per trade.
+    #   - Trades on different names that occur at the same time will have identical indicies.
+    #   - Example:
+    #       index                       amount      price       symbol
+    #       2004 - 01 - 09  12:18:01    483         324.12      'AAPL'
+    #       2004 - 01 - 09  12:18:01    122         83.10       'MSFT'
+    #       2004 - 01 - 13  14:12:23    -75         340.43      'AAPL'
+    transactions = backtest.transactions_history()
+
+    historical_data = backtest.historical_data()
 
     # prices per step
     print("test pv :", backtest.test_pc_vector)
-    # tickers.insert(0,'USD')
-    label_history = ['Omega '+ x for x in tickers]
+    # tickers.insert(0,'cash')
+    label_history = ['Omega '+ x for x in ticker_name_list_with_cash]
     test_history = pd.DataFrame(backtest.test_omega_vector, columns=label_history)
     test_history = test_history.set_index(stock_history.index.values)
     test_history['pv']=np.cumprod(backtest.test_pc_vector)
     test_history['mu'] = backtest.test_mu_vector
-    for ticker in tickers:
-        buy_sell = np.diff(shares_history['SHARES ' + ticker])
-        test_history['BUY/SELL ' + ticker] = np.insert(buy_sell, 0, shares_history['SHARES ' + ticker][0])
 
-    frames = [stock_history, shares_history, test_history]
+    buy_sell_history = backtest.buy_sell_history(prefix=True)
+
+    frames = [stock_history, positions_history, test_history, buy_sell_history]
     result = pd.concat(frames, axis=1)
+
+
 
     result.to_csv("./train_package/"+algo+"/backtest-"+algo+".csv", mode='w')
     writer = pd.ExcelWriter("./train_package/"+algo+"/backtest-"+algo+".xlsx")
-    result.to_excel(writer, 'Backtest')
+    result.to_excel(excel_writer=writer, sheet_name='Backtest')
+    historical_data.to_excel(excel_writer=writer, sheet_name='Historical')
+    returns.to_excel(excel_writer=writer, sheet_name='Returns')
+    positions.to_excel(excel_writer=writer, sheet_name='positions')
+    transactions.to_excel(excel_writer=writer, sheet_name='transactions')
+
     writer.save()
     logging.info("finish executing back test")
 

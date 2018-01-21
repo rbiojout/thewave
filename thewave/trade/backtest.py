@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from thewave.trade import trader
 from thewave.marketdata.datamatrices import DataMatrices
+from thewave.marketdata.globaldatamatrix import HistoryManager
 import logging
 from thewave.tools.trade import calculate_pv_after_commission
 
@@ -10,7 +11,7 @@ from thewave.tools.trade import calculate_pv_after_commission
 class BackTest(trader.Trader):
     def __init__(self, config, net_dir=None, agent=None, agent_type="nn"):
         trader.Trader.__init__(self, 0, config, 0, net_dir,
-                               initial_USD=1, agent=agent, agent_type=agent_type)
+                               initial_cash=1, agent=agent, agent_type=agent_type)
         if agent_type == "nn":
             data_matrices = self._rolling_trainer.data_matrices
         elif agent_type == "traditional":
@@ -21,9 +22,11 @@ class BackTest(trader.Trader):
         self.__test_set = data_matrices.get_test_set()
         self.__test_length = self.__test_set["X"].shape[0]
         self._total_steps = self.__test_length
-        self._history_close_matrix = self.__test_set["history_close"].T
+        self._history_close_data = self.__test_set["history_close"].T
+        # extract time index
+        self._time_index = self._history_close_data.index
         # add cash
-        self._history_close_matrix.insert(0,'USD', np.ones(self._history_close_matrix.shape[0]))
+        self._history_close_data.insert(0,'cash', np.ones(self._history_close_data.shape[0]))
         self.__shares_matrix = []
         self.__test_pv = 1.0
         self.__test_pc_vector = []
@@ -35,22 +38,90 @@ class BackTest(trader.Trader):
         return self.__test_set
 
     @property
-    def history_close_matrix(self):
-        """
-        USD added
-        :return: the history close used is the t
-        """
-        return self._history_close_matrix
+    def time_index(self):
+        return self._time_index
+
 
     @property
-    def shares_matrix(self):
+    def history_close_data(self):
+        """
+        cash added
+        :return: pandas dataFrame
+        """
+        return self._history_close_data
+
+    def positions_history(self, prefix=True):
         """
         convert to a DataFrame with the date index
         :return:
         """
-        columns_shares = ['SHARES ' + x for x in self.history_close_matrix.columns]
-        shares = pd.DataFrame(self.__shares_matrix, index=self.history_close_matrix.index, columns= columns_shares)
+        columns_shares = self.ticker_name_list_with_cash
+        if prefix:
+            columns_shares = ['SHARES ' + x for x in self.ticker_name_list_with_cash]
+
+        shares = pd.DataFrame(self.__shares_matrix, index=self.time_index, columns= columns_shares)
         return shares
+
+    def buy_sell_history(self, prefix=True):
+        # percentages of the portfolio for all assets including cash
+        test_history = pd.DataFrame(self.test_omega_vector, columns=self.ticker_name_list_with_cash)
+
+        # composition of SHARES in the portfolio for all assets including cash
+        shares_history = self.positions_history(prefix=False)
+
+        buy_sell_history = shares_history.diff(periods=1, axis=0)
+
+        # use the start information
+        before = np.zeros(buy_sell_history.shape[1])
+        before[0] = self.initial_cash
+        buy_sell_history.iloc[0] = shares_history.iloc[0].values
+
+        return buy_sell_history
+
+    def returns_data(self):
+        return pd.Series(data=self.__test_pc_vector, index=self._time_index)
+
+
+    def historical_data(self):
+        # only use the Data in Database for Backtest
+        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
+        start = self.time_index[0]
+        end = self.time_index[-1]
+        historical_data = history_manager.historical_data(start=start, end=end, tickers=self.ticker_name_list)
+        return historical_data
+
+    def historical_feature_data(self, feature='open'):
+        # only use the Data in Database for Backtest
+        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
+        start = self.time_index[0]
+        end = self.time_index[-1]
+        historical_data = history_manager.historical_feature_data(feature=feature, start=start, end=end, tickers=self.ticker_name_list)
+        return historical_data
+
+    def transactions_history(self, prefix=True):
+        """
+        use the close price from the day before, if necessary use the y ratio
+        we use a multi index to isolate the Buy/sell quantity and join to the price
+        :param prefix:
+        :return:
+        """
+
+        # retrieve all BUY/SELL informations
+        # stacked
+        buy_sell_history = self.buy_sell_history().drop(columns=['cash']).stack()
+        # set the name of indexes
+        buy_sell_history.index.names = ['date', 'symbol']
+
+        # retrieve the Price History: we take the Open
+        historical_open_data = self.historical_feature_data(feature='open').stack()
+        # set the name of indexes
+        historical_open_data.index.names = ['date', 'symbol']
+
+        transactions_history = pd.concat([buy_sell_history, historical_open_data], axis=1)
+        transactions_history.columns = ['amount', 'price']
+        transactions_history.reset_index(level=1)
+
+        return transactions_history
 
     @property
     def test_pv(self):

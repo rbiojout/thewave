@@ -79,11 +79,11 @@ def get_test_data(config):
     test_set = np.concatenate((np.ones((1, test_set.shape[1])), test_set), axis=0)
     return test_set
 
-def asset_vector_to_dict(ticker_list, vector, with_USD=True):
+def asset_vector_to_dict(ticker_list, vector, with_cash=True):
     vector = np.squeeze(vector)
     dict_ticker = {}
-    if with_USD:
-        dict_ticker['USD'] = vector[0]
+    if with_cash:
+        dict_ticker['cash'] = vector[0]
     for i, name in enumerate(ticker_list):
         if vector[i+1] > 0:
             dict_ticker[name] = vector[i + 1]

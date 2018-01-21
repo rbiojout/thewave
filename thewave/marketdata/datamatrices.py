@@ -72,14 +72,14 @@ class DataMatrices:
 
         self.__global_data = pd.concat([self.__train_validation_data, self.__test_data], axis=2)
         # ADD Cash
-        # tickers = (USD,) + tickers
+        # tickers = (cash,) + tickers
         self.__ticker_no = len(tickers)
 
-        # add the USD cash as the first value
+        # add the cash as the first value
         # gd = self.__global_data
         # ones = np.ones((gd.shape[0], gd.shape[2]))
         # df = pd.DataFrame(ones, index = type_list)
-        # gd.loc[:,'USD',:]= df
+        # gd.loc[:,'cash',:]= df
 
         # portfolio vector memory, [time, assets]
         #@TODO change minor_axis and major_axis

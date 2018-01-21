@@ -8,12 +8,13 @@ import time
 
 
 class Trader:
-    def __init__(self, waiting_period, config, total_steps, net_dir, agent=None, initial_USD=1.0, agent_type="nn"):
+    def __init__(self, waiting_period, config, total_steps, net_dir, agent=None, initial_cash=1.0, agent_type="nn"):
         """
         @:param agent_type: string, could be nn or traditional
         @:param agent: the traditional agent object, if the agent_type is traditional
         """
         self._steps = 0
+        self._initial_cash = initial_cash
         self._total_steps = total_steps
         self._period = waiting_period
         self._agent_type = agent_type
@@ -32,8 +33,8 @@ class Trader:
             raise ValueError()
         self._agent = agent
 
-        # the total assets is calculated with USD
-        self._total_capital = initial_USD
+        # the total assets is calculated with cash
+        self._total_capital = initial_cash
         self._window_size = config["input"]["window_size"]
         self._ticker_number = len(parse_list(config["input"]["ticker_list"]))
         self._commission_rate = config["trading"]["trading_consumption"]
@@ -46,15 +47,29 @@ class Trader:
         self._last_omega[0] = 1.0
 
         if self.__class__.__name__=="BackTest":
-            # self._initialize_logging_data_frame(initial_USD)
+            # self._initialize_logging_data_frame(initial_cash)
             self._logging_data_frame = None
             # self._disk_engine =  sqlite3.connect('./database/back_time_trading_log.db')
             # self._initialize_data_base()
         self._current_error_state = 'S000'
         self._current_error_info = ''
 
-    def _initialize_logging_data_frame(self, initial_USD):
-        logging_dict = {'Total Asset (USD)': initial_USD, 'USD': 1}
+    @property
+    def initial_cash(self):
+        return self._initial_cash
+
+    @property
+    def ticker_name_list(self):
+        return self._ticker_name_list
+
+    @property
+    def ticker_name_list_with_cash(self):
+        ticker_name_list_with_cash = list(self._ticker_name_list)
+        ticker_name_list_with_cash.insert(0, 'cash')
+        return ticker_name_list_with_cash
+
+    def _initialize_logging_data_frame(self, initial_cash):
+        logging_dict = {'Total Asset (cash)': initial_cash, 'cash': 1}
         for ticker in self._ticker_name_list:
             logging_dict[ticker] = 0
         self._logging_data_frame = pd.DataFrame(logging_dict, index=pd.to_datetime([time.time()], unit='s'))
@@ -71,7 +86,7 @@ class Trader:
     def _log_trading_info(self, time, omega):
         time_index = pd.to_datetime([time], unit='s')
         if self._steps > 0:
-            logging_dict = {'Total Asset (USD)': self._total_capital, 'USD': omega[0, 0]}
+            logging_dict = {'Total Asset (cash)': self._total_capital, 'cash': omega[0, 0]}
             for i in range(len(self._ticker_name_list)):
                 logging_dict[self._ticker_name_list[i]] = omega[0, i + 1]
             new_data_frame = pd.DataFrame(logging_dict, index=time_index)
@@ -98,7 +113,7 @@ class Trader:
             self.rolling_train()
         if not self.__class__.__name__=="BackTest":
             self._last_omega = omega.copy()
-        logging.info('total assets are %3f USD' % self._total_capital)
+        logging.info('total assets are %3f cash' % self._total_capital)
         logging.debug("="*30)
         trading_time = time.time() - starttime
         if trading_time < self._period:

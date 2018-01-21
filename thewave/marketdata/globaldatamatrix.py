@@ -164,6 +164,43 @@ class HistoryManager:
         # return df
         return panel
 
+    # @TODO finish
+    def historical_data(self, start, end, tickers=('AAPL','A')):
+        historical_dataFrame = pd.DataFrame()
+
+        connection = sqlite3.connect(DATABASE_DIR)
+        try:
+            for ticker in tickers:
+                cursor = connection.cursor()
+                sql = (
+                "SELECT date, open, high, low, close, volume from History WHERE ticker = \"{ticker}\" AND date >= \"{start}\" AND date<=\"{end}\" "
+                "GROUP BY date, ticker".format(ticker=ticker, start=start, end=end))
+                dataframe = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date'])
+                new_columns = [ticker + ' - ' + column for column in dataframe.columns.values]
+                dataframe.columns = new_columns
+                historical_dataFrame = pd.concat([historical_dataFrame, dataframe], axis=1)
+        finally:
+            connection.commit()
+        return historical_dataFrame
+
+    # @TODO fix for date to be adjusted
+    def historical_feature_data(self, start, end, tickers=('AAPL','A'), feature='open'):
+        historical_dataFrame = pd.DataFrame()
+
+        connection = sqlite3.connect(DATABASE_DIR)
+        try:
+            for ticker in tickers:
+                cursor = connection.cursor()
+                sql = (
+                "SELECT date, {feature} from History WHERE ticker = \"{ticker}\" AND date >= date(\"{start}\") AND date<=date(\"{end}\") "
+                "GROUP BY date".format(feature=feature, ticker=ticker, start=start, end=end))
+                dataframe = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date'])
+                dataframe.rename(columns={feature: ticker}, inplace=True)
+                historical_dataFrame = pd.concat([historical_dataFrame,dataframe], axis=1 )
+        finally:
+            connection.commit()
+        return historical_dataFrame
+
     # add new history data into the marketdata
     def update_ticker(self, ticker):
         connection = sqlite3.connect(DATABASE_DIR)
