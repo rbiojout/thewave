@@ -116,6 +116,7 @@ class DataMatrices:
                      ", of validation examples is %s" % (self._num_train_samples, self._num_validation_samples))
         logging.debug("the training set is from %s to %s" % (min(self._train_ind), max(self._train_ind)))
         logging.debug("the validation set is from %s to %s" % (min(self._validation_ind), max(self._validation_ind)))
+        logging.debug("the test set is from %s to %s" % (min(self._test_ind), max(self._test_ind)))
         logging.debug("the window_size is set to %s" % (self._window_size))
 
     @property
@@ -294,30 +295,33 @@ class DataMatrices:
         """
         train_portion = 1 - validation_portion
         s = float(train_portion + validation_portion)
+        train_ind =[]
+        validation_ind = []
+        test_ind =[]
         if portion_reversed:
             portions = np.array([validation_portion]) / s
             portion_split = (portions * self._num_train_validation_periods).astype(int)
             indices = np.arange(self._num_train_validation_periods)
-            self._validation_ind, self._train_ind = np.split(indices, portion_split)
+            validation_ind, train_ind = np.split(indices, portion_split)
         else:
             portions = np.array([train_portion]) / s
             portion_split = (portions * self._num_train_validation_periods).astype(int)
             indices = np.arange(self._num_train_validation_periods)
-            self._train_ind, self._validation_ind = np.split(indices, portion_split)
+            train_ind, validation_ind = np.split(indices, portion_split)
 
-        self._train_ind = self._train_ind[:-(self._window_size + 1)]
+        self._train_ind = train_ind[:-(self._window_size + 1)]
         # NOTE(zhengyao): change the logic here in order to fit both
         # reversed and normal version
         self._train_ind = list(self._train_ind)
         self._num_train_samples = len(self._train_ind)
 
 
-        self._validation_ind = self._validation_ind[:-(self._window_size + 1)]
+        self._validation_ind = validation_ind[:-(self._window_size + 1)]
         self._validation_ind = list(self._validation_ind)
         self._num_validation_samples = len(self._validation_ind)
 
         # test indices
-        self._test_ind = np.arange(start=self._num_train_validation_periods, stop=self._num_train_validation_periods+self._num_test_periods)
-        self._test_ind = self._test_ind[:-(self._window_size + 1)]
+        test_ind = np.arange(start=self._num_train_validation_periods, stop=self._num_train_validation_periods+self._num_test_periods)
+        self._test_ind = test_ind[:-(self._window_size + 1)]
         self._test_ind = list(self._test_ind)
         self._num_test_samples = len(self._test_ind)

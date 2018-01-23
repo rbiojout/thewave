@@ -1,6 +1,6 @@
 from __future__ import absolute_import, print_function, division
 
-from copy import copy, deepcopy
+import pickle
 
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
@@ -164,7 +164,7 @@ def table_backtest(config, algos, labels=None, format="raw",
 def file_backtest(config, algo):
     logging.info("start executing back test")
     backtest = get_backtester(algo, config)
-    print("test omega :", backtest.test_omega_vector)
+    # print("test omega :", backtest.test_omega_vector)
 
     ticker_name_list_no_cash = backtest.ticker_name_list
     ticker_name_list_with_cash = backtest.ticker_name_list_with_cash
@@ -219,10 +219,17 @@ def file_backtest(config, algo):
 
     buy_sell_history = backtest.buy_sell_history(prefix=True)
 
+    # remove utc reference for joining and convert to naive datetime
+    stock_history.index = stock_history.index.tz_localize(None)
+    positions_history.index = positions_history.index.tz_localize(None)
+    test_history.index = test_history.index.tz_localize(None)
+    buy_sell_history.index = buy_sell_history.index.tz_localize(None)
+
     frames = [stock_history, positions_history, test_history, buy_sell_history]
     result = pd.concat(frames, axis=1)
 
-
+    with open("./train_package/"+algo+"/backtest-"+algo+".pickle", "wb") as f:
+        pickle.dump([returns, positions, transactions], f)
 
     result.to_csv("./train_package/"+algo+"/backtest-"+algo+".csv", mode='w')
     writer = pd.ExcelWriter("./train_package/"+algo+"/backtest-"+algo+".xlsx")

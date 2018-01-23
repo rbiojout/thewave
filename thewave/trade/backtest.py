@@ -10,7 +10,7 @@ from thewave.tools.trade import calculate_pv_after_commission
 
 class BackTest(trader.Trader):
     def __init__(self, config, net_dir=None, agent=None, agent_type="nn"):
-        trader.Trader.__init__(self, 0, config, 0, net_dir,
+        trader.Trader.__init__(self, waiting_period=0, config=config, total_steps=0, net_dir=net_dir,
                                initial_cash=1, agent=agent, agent_type=agent_type)
         if agent_type == "nn":
             data_matrices = self._rolling_trainer.data_matrices
@@ -24,10 +24,12 @@ class BackTest(trader.Trader):
         self._total_steps = self.__test_length
         self._history_close_data = self.__test_set["history_close"].T
         # extract time index
-        self._time_index = self._history_close_data.index
+        time_index = self._history_close_data.index
+        self._time_index = time_index.tz_localize('UTC')
         # add cash
         self._history_close_data.insert(0,'cash', np.ones(self._history_close_data.shape[0]))
-        self.__shares_matrix = []
+        self.__shares_matrix = pd.DataFrame()
+        self._positions_history = pd.DataFrame()
         self.__test_pv = 1.0
         self.__test_pc_vector = []
         self.__test_omega = []
@@ -50,18 +52,6 @@ class BackTest(trader.Trader):
         """
         return self._history_close_data
 
-    def positions_history(self, prefix=True):
-        """
-        convert to a DataFrame with the date index
-        :return:
-        """
-        columns_shares = self.ticker_name_list_with_cash
-        if prefix:
-            columns_shares = ['SHARES ' + x for x in self.ticker_name_list_with_cash]
-
-        shares = pd.DataFrame(self.__shares_matrix, index=self.time_index, columns= columns_shares)
-        return shares
-
     def buy_sell_history(self, prefix=True):
         # percentages of the portfolio for all assets including cash
         test_history = pd.DataFrame(self.test_omega_vector, columns=self.ticker_name_list_with_cash)
@@ -79,24 +69,20 @@ class BackTest(trader.Trader):
         return buy_sell_history
 
     def returns_data(self):
-        return pd.Series(data=self.__test_pc_vector, index=self._time_index)
+        index_utc = self._time_index
+        return pd.Series(data=self.__test_pc_vector, index=index_utc)
 
-
-    def historical_data(self):
-        # only use the Data in Database for Backtest
-        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
-        start = self.time_index[0]
-        end = self.time_index[-1]
-        historical_data = history_manager.historical_data(start=start, end=end, tickers=self.ticker_name_list)
-        return historical_data
-
-    def historical_feature_data(self, feature='open'):
-        # only use the Data in Database for Backtest
-        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
-        start = self.time_index[0]
-        end = self.time_index[-1]
-        historical_data = history_manager.historical_feature_data(feature=feature, start=start, end=end, tickers=self.ticker_name_list)
-        return historical_data
+    def positions_history(self, prefix=True):
+        """
+        convert to a DataFrame with the date index
+        :return:
+        """
+        columns_shares = self.ticker_name_list_with_cash
+        if prefix:
+            columns_shares = ['SHARES ' + x for x in self.ticker_name_list_with_cash]
+        shares = self._positions_history.copy()
+        shares.columns = columns_shares
+        return shares
 
     def transactions_history(self, prefix=True):
         """
@@ -119,9 +105,27 @@ class BackTest(trader.Trader):
 
         transactions_history = pd.concat([buy_sell_history, historical_open_data], axis=1)
         transactions_history.columns = ['amount', 'price']
-        transactions_history.reset_index(level=1)
+        transactions_history = transactions_history.reset_index(level=1)
 
         return transactions_history
+
+    def historical_data(self):
+        # only use the Data in Database for Backtest
+        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
+        start = self.time_index[0]
+        end = self.time_index[-1]
+        historical_data = history_manager.historical_data(start=start, end=end, tickers=self.ticker_name_list)
+        return historical_data
+
+    def historical_feature_data(self, feature='open'):
+        # only use the Data in Database for Backtest
+        history_manager = HistoryManager(tickers=self.ticker_name_list, online=False)
+        start = self.time_index[0]
+        end = self.time_index[-1]
+        historical_data = history_manager.historical_feature_data(feature=feature, start=start, end=end, tickers=self.ticker_name_list)
+
+        historical_data.set_index(historical_data.index.tz_localize('UTC'))
+        return historical_data
 
     @property
     def test_pv(self):
@@ -145,6 +149,15 @@ class BackTest(trader.Trader):
 
     def finish_trading(self):
         self.__test_pv = self._total_capital
+        # index the shares dataframe
+        index_utc = self._time_index
+        shares = (self.__shares_matrix.T).copy()
+        shares = shares.set_index(index_utc)
+
+        columns_shares = self.ticker_name_list_with_cash
+        shares.columns = columns_shares
+
+        self._positions_history = shares
 
         """
         fig, ax = plt.subplots()
@@ -180,11 +193,11 @@ class BackTest(trader.Trader):
         return inputs
 
     def trade_by_strategy(self, omega):
-        logging.info("the step is {}".format(self._steps))
+        logging.info("the step is {} for {}".format(self._steps, self.time_index[self._steps]))
         logging.debug("the raw omega is {}".format(omega))
         future_price = np.concatenate((np.ones(1), self.__get_matrix_y()))
-        logging.debug("the future price vector is {}".format(future_price))
-        quote_price_close = (self.__test_set["history_close"]).iloc[:,self._steps]
+        # logging.debug("the future price vector is {}".format(future_price))
+        quote_price_close = (self.__test_set["history_close"]).iloc[:, self._steps]
         quote_price_previous = np.concatenate( [np.ones(1),
                                 np.divide(quote_price_close.values, self.__get_matrix_y()) ])
         # impact of commission (mu)
@@ -194,10 +207,11 @@ class BackTest(trader.Trader):
         # evaluate the shares of assets
         last_capital = self._total_capital*pv_after_commission
         split_assets = np.multiply(last_capital, omega)
-        logging.debug("the split of assets is {}".format(split_assets))
+        # logging.debug("the split of assets is {}".format(split_assets))
         shares = np.divide(split_assets, quote_price_previous)
-        self.__shares_matrix.append(shares)
-        logging.debug("the number of assets is {}".format(shares))
+
+        self.__shares_matrix[self._steps] = shares
+        # logging.debug("the number of assets is {}".format(shares))
 
         portfolio_change = pv_after_commission * np.dot(omega, future_price)
         self._total_capital *= portfolio_change

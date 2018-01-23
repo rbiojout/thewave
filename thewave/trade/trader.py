@@ -22,6 +22,7 @@ class Trader:
         if agent_type == "traditional":
             config["input"]["feature_list"] = "['close']"
             config["input"]["norm_method"] = "relative"
+            self._ticker_name_list = parse_list(config["input"]["ticker_list"])
             self._norm_method = "relative"
         elif agent_type == "nn":
             self._rolling_trainer = RollingTrainer(config, net_dir, agent=agent)

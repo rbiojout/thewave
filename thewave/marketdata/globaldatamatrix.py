@@ -156,8 +156,9 @@ class HistoryManager:
                                                     parse_dates=["date"],
                                                     index_col="date")
                     # serial_data = pd.TimeSeries(serial_data.squeeze(), index = serial_data.index)
+                    # serial_data.set_index(serial_data.index.tz_localize('UTC'), inplace=True)
                     panel.loc[feature, ticker, serial_data.index] = serial_data.squeeze()
-                    # panel = panel_fillna(panel, "both")
+                    panel = panel_fillna(panel, "both")
         finally:
             connection.commit()
             connection.close()
@@ -197,6 +198,8 @@ class HistoryManager:
                 dataframe = pd.read_sql_query(sql, connection, parse_dates=['date'], index_col=['date'])
                 dataframe.rename(columns={feature: ticker}, inplace=True)
                 historical_dataFrame = pd.concat([historical_dataFrame,dataframe], axis=1 )
+                # IMPORTANT fill missing data
+                historical_dataFrame = historical_dataFrame.fillna(method='bfill')
         finally:
             connection.commit()
         return historical_dataFrame
