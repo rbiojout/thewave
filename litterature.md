@@ -33,6 +33,9 @@ GITHUB https://github.com/ZhengyaoJiang/PGPortfolio https://github.com/wassname/
 Deep Reinforcement Learning for Portfolio Management (2017)
 http://www-scf.usc.edu/~zhan527/post/cs599/
 
+Trading Using Q-Learning (2016)
+https://github.com/ucaiado/QLearning_Trading
+
 ## Deep Learning
 Deep learning with long short-term memory networks for financial market predictions (2017) https://www.econstor.eu/handle/10419/157808
 
