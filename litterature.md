@@ -26,6 +26,9 @@ An automated FX trading system using adaptive reinforcement learning (2004) http
 An investigation into the use of reinforcement learning techniques within the algorithmic trading domain (2015)
 http://www.doc.ic.ac.uk/teaching/distinguished-projects/2015/j.cumming.pdf
 
+OPTIMIZING EXPECTATIONS: FROM DEEP REINFORCEMENT LEARNING TO STOCHASTIC COMPUTATION GRAPHS (2016)
+http://joschu.net/docs/thesis.pdf
+
 A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem (2017) https://arxiv.org/abs/1706.10059
 
 GITHUB https://github.com/ZhengyaoJiang/PGPortfolio https://github.com/wassname/rl-portfolio-management
