@@ -232,7 +232,9 @@ def file_backtest(config, algo):
         pickle.dump([returns, positions, transactions], f)
 
     result.to_csv("./train_package/"+algo+"/backtest-"+algo+".csv", mode='w')
-    writer = pd.ExcelWriter("./train_package/"+algo+"/backtest-"+algo+".xlsx")
+    writer = pd.ExcelWriter("./train_package/"+algo+"/backtest-"+algo+".xlsx",
+                            engine='xlsxwriter',
+                            options={'remove_timezone': True})
     result.to_excel(excel_writer=writer, sheet_name='Backtest')
     historical_data.to_excel(excel_writer=writer, sheet_name='Historical')
     returns.to_excel(excel_writer=writer, sheet_name='Returns')

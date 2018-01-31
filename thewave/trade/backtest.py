@@ -94,7 +94,10 @@ class BackTest(trader.Trader):
 
         # retrieve all BUY/SELL informations
         # stacked
-        buy_sell_history = self.buy_sell_history().drop(columns=['cash']).stack()
+        buy_sell_history = self.buy_sell_history().copy()
+        buy_sell_history = buy_sell_history.drop('cash',axis=1)
+
+        buy_sell_history=buy_sell_history.stack()
         # set the name of indexes
         buy_sell_history.index.names = ['date', 'symbol']
 

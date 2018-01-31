@@ -119,14 +119,17 @@ class TraderTrainer:
         fast_train = self.train_config["fast_train"]
         tflearn.is_training(False, self._agent.session)
 
-        summary, pv, v_pv, v_log_mean, v_loss, log_mean_free, weights= \
+        summary, pv, v_pv, v_log_mean, v_loss, log_mean_free, weights, sharpe, y, future_price= \
             self._evaluate("validation", self.summary,
                            self._agent.pv_vector,
                            self._agent.portfolio_value,
                            self._agent.log_mean,
                            self._agent.loss,
                            self._agent.log_mean_free,
-                           self._agent.portfolio_weights)
+                           self._agent.portfolio_weights,
+                           self._agent.sharpe,
+                           self._agent.y,
+                           self._agent.future_price)
         self.validate_writer.add_summary(summary, step)
 
         if not fast_train:
@@ -140,13 +143,14 @@ class TraderTrainer:
         if not fast_train:
             logging.info('training loss is %s\n' % loss_value)
         weights_shape = weights.shape
-        logging.info('first weight %s is %s \n' % (weights_shape, weights[0]))
+        logging.info('first weight %s is %s \n' % (weights_shape, weights[0,:]))
+        logging.info('last weight %s is %s \n' % (weights_shape, weights[-1,:]))
 
         logging.info('the portfolio value on validation set is %s\nlog_mean is %s\n'
-                     'loss_value is %3f\nlog mean without commission fee is %3f\n' % \
-                     (v_pv, v_log_mean, v_loss, log_mean_free))
+                     'loss_value is %3f\nlog mean without commission fee is %3f\n sharpe is %3f\n' % \
+                     (v_pv, v_log_mean, v_loss, log_mean_free, sharpe))
         pv_shape = pv.shape
-        logging.info('the portfolio pv %s are %s \n' % (pv_shape, pv))
+        #logging.debug('the portfolio pv %s are %s \n' % (pv_shape, pv))
         logging.info('='*30+"\n")
 
         if not self.__snap_shot:
@@ -187,8 +191,10 @@ class TraderTrainer:
         tf.summary.scalar('loss', self._agent.loss)
         tf.summary.scalar("log_mean_free", self._agent.log_mean_free)
         tf.summary.scalar("sharpe", self._agent.sharp_ratio)
+        tf.summary.histogram("mu", self._agent.mu)
         tf.summary.histogram("portfolio_weights", self._agent.portfolio_weights)
-        tf.summary.histogram("pv_vector", self._agent.pv_vector)
+        tf.summary.histogram("y", self._agent.y[-1,0,:])
+        tf.summary.histogram("future_price", self._agent.future_price)
 
         self.summary = tf.summary.merge_all()
         location = log_file_dir
@@ -229,9 +235,10 @@ class TraderTrainer:
             total_data_time += (finish_data - step_start)
             self._agent.train(x, y, last_w=last_w, setw=setw)
             total_training_time += time.time() - finish_data
-            if i % 1000 == 0 and log_file_dir:
-                logging.info("average time for data accessing is %s" % (total_data_time/1000))
-                logging.info("average time for training is %s" % (total_training_time/1000))
+            log_step = 100
+            if i % log_step == 0 and log_file_dir:
+                logging.info("average time for data accessing is %s" % (total_data_time/log_step))
+                logging.info("average time for training is %s" % (total_training_time/log_step))
                 total_training_time = 0
                 total_data_time = 0
                 self.log_between_steps(i)

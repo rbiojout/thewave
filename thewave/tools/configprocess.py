@@ -29,11 +29,17 @@ def fill_default(config):
     fill_input_default(config["input"])
     fill_train_config(config["training"])
 
+def clean_for_backtest(config):
+    config["trading"]["rolling_training_steps"] = 0
+    return config
 
 def fill_train_config(train_config):
     set_missing(train_config, "fast_train", True)
     set_missing(train_config, "decay_rate", 1.0)
-    set_missing(train_config, "decay_steps", 50000)
+    try:
+        set_missing(train_config, "decay_steps", train_config["steps"]/2)
+    finally:
+        set_missing(train_config, "decay_steps", 50000)
 
 
 def fill_input_default(input_config):
@@ -69,6 +75,10 @@ def fill_layers_default(layers):
             set_missing(layer, "regularizer", None)
             set_missing(layer, "weight_decay", 0.0)
         elif layer["type"] == "DropOut":
+            pass
+        elif layer["type"] == "MaxPooling":
+            pass
+        elif layer["type"] == "BatchNormalization":
             pass
         else:
             raise ValueError("layer name {} not supported".format(layer["type"]))

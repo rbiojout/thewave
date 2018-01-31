@@ -19,27 +19,27 @@ class NNAgent:
                                  config["input"]["window_size"],
                                  config["layers"],
                                  device=device)
-        self.__global_step = tf.Variable(0, trainable=False)
+        self.__global_step = tf.Variable(0, trainable=False, name='global_step')
         self.__train_operation = None
         self.__y = tf.placeholder(tf.float32, shape=[None,
                                                      self.__feature_number,
-                                                     self.__ticker_number])
-        self.__future_price = tf.concat([tf.ones([self.__net.input_num, 1]),
+                                                     self.__ticker_number], name='y')
+        self.__future_price = tf.concat([tf.ones([self.__net.input_num, 1], name='future_price'),
                                        self.__y[:, 0, :]], 1)
         self.__future_omega = (self.__future_price * self.__net.output) /\
-                              tf.reduce_sum(self.__future_price * self.__net.output, axis=1)[:, None]
+                              tf.reduce_sum(self.__future_price * self.__net.output, axis=1, name='future_price_x_output')[:, None]
         # tf.assert_equal(tf.reduce_sum(self.__future_omega, axis=1), tf.constant(1.0))
         self.__commission_ratio = self.__config["trading"]["trading_consumption"]
         # @TODO the first value is not taking care of commission: change the 1 to 1-commission
-        self.__pv_vector = tf.reduce_sum(self.__net.output * self.__future_price, reduction_indices=[1]) * \
+        self.__pv_vector = tf.reduce_sum(self.__net.output * self.__future_price, reduction_indices=[1], name="pv_vector") * \
                            (tf.concat([tf.ones(1), self.__pure_pc()], axis=0))
 
         self.__log_mean_free = tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output * self.__future_price,
-                                                                   reduction_indices=[1])))
-        self.__portfolio_value = tf.reduce_prod(self.__pv_vector)
-        self.__mean = tf.reduce_mean(self.__pv_vector)
-        self.__log_mean = tf.reduce_mean(tf.log(self.__pv_vector))
-        self.__standard_deviation = tf.sqrt(tf.reduce_mean((self.__pv_vector - self.__mean) ** 2))
+                                                                   reduction_indices=[1])), name="log_mean_free")
+        self.__portfolio_value = tf.reduce_prod(self.__pv_vector, name='portfolio_value')
+        self.__mean = tf.reduce_mean(self.__pv_vector, name='mean')
+        self.__log_mean = tf.reduce_mean(tf.log(self.__pv_vector), name='log_mean')
+        self.__standard_deviation = tf.sqrt(tf.reduce_mean((self.__pv_vector - self.__mean) ** 2), name='standard_deviation')
         self.__sharp_ratio = (self.__mean - 1) / self.__standard_deviation
         self.__loss = self.__set_loss_function()
         self.__train_operation = self.init_train(learning_rate=self.__config["training"]["learning_rate"],
@@ -59,6 +59,18 @@ class NNAgent:
     @property
     def pv_vector(self):
         return self.__pv_vector
+
+    @property
+    def y(self):
+        return self.__y
+
+    @property
+    def future_price(self):
+        return self.__future_price
+
+    @property
+    def mu(self):
+        return self.__pure_pc()
 
     @property
     def standard_deviation(self):
@@ -88,6 +100,11 @@ class NNAgent:
     def loss(self):
         return self.__loss
 
+    @property
+    def sharpe(self):
+        return self.__sharp_ratio
+
+
     def my_tf_round(self,x,decimals=0):
         multiplier = tf.constant(10 ** decimals, dtype=x.dtype)
         return tf.round(x * multiplier) / multiplier
@@ -100,36 +117,37 @@ class NNAgent:
     def __set_loss_function(self):
         def loss_function4():
             return -tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output[:] * self.__future_price,
-                                                        reduction_indices=[1])))
+                                                        reduction_indices=[1])), name='function4')
 
         def loss_function5():
             return -tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output * self.__future_price, reduction_indices=[1]))) + \
-                   LAMBDA * tf.reduce_mean(tf.reduce_sum(-tf.log(1 + 1e-6 - self.__net.output), reduction_indices=[1]))
+                   LAMBDA * tf.reduce_mean(tf.reduce_sum(-tf.log(1 + 1e-6 - self.__net.output), reduction_indices=[1]), name='function5')
 
         def loss_function6():
-            return -tf.reduce_mean(tf.log(self.pv_vector))
+            return -tf.reduce_mean(tf.log(self.pv_vector), name='function6')
 
         def loss_function7():
             return -tf.reduce_mean(tf.log(self.pv_vector)) + \
-                   LAMBDA * tf.reduce_mean(tf.reduce_sum(-tf.log(1 + 1e-6 - self.__net.output), reduction_indices=[1]))
+                   LAMBDA * tf.reduce_mean(tf.reduce_sum(-tf.log(1 + 1e-6 - self.__net.output), reduction_indices=[1]), name='function7')
 
         def with_last_w():
             return -tf.reduce_mean(tf.log(tf.reduce_sum(self.__net.output[:] * self.__future_price, reduction_indices=[1])
                                           -tf.reduce_sum(tf.abs(self.__net.output[:, 1:] - self.__net.previous_w)
-                                                         *self.__commission_ratio, reduction_indices=[1])))
+                                                         *self.__commission_ratio, reduction_indices=[1])), name='function8')
+        # @TODO ADD exp for sharpe
         def loss_function9():
-            return -tf.reduce_max(tf.log(self.pv_vector))
+            return -1 * self.__sharp_ratio
 
         loss_function = loss_function5
         if self.__config["training"]["loss_function"] == "loss_function4":
             loss_function = loss_function4
         elif self.__config["training"]["loss_function"] == "loss_function5":
             loss_function = loss_function5
-        elif self.__config["training"]["loss_function"] == "loss_function6" or "real_pv":
+        elif self.__config["training"]["loss_function"] in { "loss_function6" , "real_pv"}:
             loss_function = loss_function6
         elif self.__config["training"]["loss_function"] == "loss_function7":
             loss_function = loss_function7
-        elif self.__config["training"]["loss_function"] == "loss_function8" or "with_last_w":
+        elif self.__config["training"]["loss_function"] in { "loss_function8" , "with_last_w"}:
             loss_function = with_last_w
         elif self.__config["training"]["loss_function"] == "loss_function9":
             loss_function = loss_function9

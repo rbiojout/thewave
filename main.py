@@ -5,7 +5,7 @@ import os
 import time
 from argparse import ArgumentParser
 from datetime import datetime
-from thewave.tools.configprocess import preprocess_config
+from thewave.tools.configprocess import preprocess_config, clean_for_backtest
 from thewave.tools.configprocess import load_config
 from thewave.tools.shortcut import execute_backtest
 from thewave.resultprocess import plot
@@ -94,7 +94,9 @@ def main():
             labels = labels.split(",")
         else:
             labels = algos
-        plot.plot_backtest(load_config(algo), algos, labels)
+        config = load_config(algo)
+        config = clean_for_backtest(config)
+        plot.plot_backtest(config, algos, labels)
     # python main.py --mode=table  --algo=5 --algos=5,olmar,ons,ubah --labels=nntrader,olmar,ons,ubah
     elif options.mode == "table":
         logging.basicConfig(level=logging.DEBUG)
@@ -105,11 +107,15 @@ def main():
             labels = labels.split(",")
         else:
             labels = algos
-        plot.table_backtest(load_config(algo), algos, labels, format=options.format)
+        config = load_config(algo)
+        config = clean_for_backtest(config)
+        plot.table_backtest(config, algos, labels, format=options.format)
     elif options.mode == "resultfile":
         logging.basicConfig(level=logging.DEBUG)
         algo = options.algo
-        plot.file_backtest(load_config(algo), algo)
+        config = load_config(algo)
+        config = clean_for_backtest(config)
+        plot.file_backtest(config, algo)
 
 def _set_logging_by_algo(console_level, file_level, algo, name):
     if algo.isdigit():
