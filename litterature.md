@@ -29,6 +29,9 @@ http://www.doc.ic.ac.uk/teaching/distinguished-projects/2015/j.cumming.pdf
 OPTIMIZING EXPECTATIONS: FROM DEEP REINFORCEMENT LEARNING TO STOCHASTIC COMPUTATION GRAPHS (2016)
 http://joschu.net/docs/thesis.pdf
 
+Trading Using Q-Learning (2016)
+https://github.com/ucaiado/QLearning_Trading
+
 A Deep Reinforcement Learning Framework for the Financial Portfolio Management Problem (2017) https://arxiv.org/abs/1706.10059
 
 GITHUB https://github.com/ZhengyaoJiang/PGPortfolio https://github.com/wassname/rl-portfolio-management
@@ -37,10 +40,9 @@ Deep Reinforcement Learning for Portfolio Management (2017)
 http://www-scf.usc.edu/~zhan527/post/cs599/
 https://github.com/vermouth1992/drl-portfolio-management
 
-
-Trading Using Q-Learning (2016)
-https://github.com/ucaiado/QLearning_Trading
-
+Robust-Log-Optimal-Strategy-with-Reinforcement-Learning(2018)
+https://arxiv.org/pdf/1805.00205.pdf
+https://github.com/fxy96/Robust-Log-Optimal-Strategy-with-Reinforcement-Learning
 
 https://github.com/aikorea/awesome-rl
 
