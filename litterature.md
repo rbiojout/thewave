@@ -46,6 +46,10 @@ https://github.com/fxy96/Robust-Log-Optimal-Strategy-with-Reinforcement-Learning
 
 https://github.com/aikorea/awesome-rl
 
+Pytorch implementations
+- https://github.com/higgsfield/RL-Adventure
+- https://github.com/higgsfield/RL-Adventure-2
+
 
 ## Deep Learning
 Deep learning with long short-term memory networks for financial market predictions (2017) https://www.econstor.eu/handle/10419/157808
